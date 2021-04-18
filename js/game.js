@@ -1,19 +1,43 @@
-let inplay = true
+let inplay = false
+let loaded = false
 
-function init() {
-    setup_canvas()
+async function init() {
+    await setup_canvas()
+
+    const result = await Promise.allSettled([
+        load_image(canvas.toDataURL()),
+        //load_image('background.jpg'),
+    ])
+
+    result.forEach((img) => {
+        if (!img.value) {
+            c.clearRect(0, 0, canvas.width, canvas.height)
+            c.fillStyle = '#fff'
+            let text = 'Error: Missing images.'
+            let text_width = c.measureText(text).width
+            c.fillText(text, center - text_width / 2, middle)
+            return loaded = false
+        }
+        c.drawImage(img.value, 0, 0);
+        loaded = true
+    });
+
+    if (!loaded) return
 
     // TODO: initiate actors for game play
 
-    requestAnimationFrame(animate)
+    inplay = true
+    animate()
 }
 
 function animate() {
-    if (inplay) requestAnimationFrame(animate)
+    inplay = false
 
     // TODO: animate like ya obvi
+    console.log('animate')
 
-    inplay = false
+
+    if (inplay && loaded) requestAnimationFrame(animate)
 }
 
 document.onload = init()
