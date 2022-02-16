@@ -1,7 +1,6 @@
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
-let default_image
 let center, middle
 
 function setup_canvas() {
@@ -33,4 +32,8 @@ function load_image(url) {
 
 function rand(min, max) {
     return Math.floor(Math.random() * (max - min) + min)
+}
+
+function degs_to_rads(deg) {
+    return (deg * Math.PI) / 180.0
 }

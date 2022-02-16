@@ -24,8 +24,6 @@ class Actor {
             c.restore()
         } else c.drawImage(this.image, this.x, this.y, this.width, this.height)
 
-        console.log(this.image, this.x, this.y, this.width, this.height)
-
         return this
     }
 
@@ -56,7 +54,7 @@ class Background extends Actor {
     }
 }
 
-// QUESTION: removing actors from world
+// QUESTION: removing actors from world?
 
 class Platform_Set extends Actor {
     constructor(prop = {}) {
@@ -67,8 +65,17 @@ class Platform_Set extends Actor {
     }
 
     draw() {
-        console.log(JSON.stringify(this.instruc), this.platforms);
         this.platforms.forEach(p => p.draw())
+        return this
+    }
+
+    move(player) {
+        this.platforms.forEach(p => p.x = player.direction * player.speed)
+    }
+
+    get_x() {
+        let last = this.platforms[this.platforms.length - 1]
+        return last.x + last.width
     }
 
     create_platform_group(start_x) {
@@ -156,7 +163,7 @@ class Player extends Actor {
     constructor(prop = {}) {
         super(prop)
         this.direction = 0
-        this.speed = 1
+        this.speed = 5
         this.jump_strength = 0
         this.can_jump = true
         this.is_jumping = false
@@ -190,7 +197,7 @@ class Player extends Actor {
             return
         }
 
-        if (this.can_jump && this.jump_count < 2) {
+        if (is_key_down.up && this.can_jump && this.jump_count < 2) {
             this.jump_strength = -15
             this.can_jump = false
             this.is_jumping = true
@@ -198,11 +205,25 @@ class Player extends Actor {
             this.y += this.jump_strength
         }
 
-        if (this.is_jumping) this.roation = this.jump_strength * 2
+        if (this.is_jumping) this.rotation = this.jump_strength * 2
 
         this.fall()
 
-        // TODO: Key interaction
+        if (!is_key_down.up) this.can_jump = true
+        if (is_key_down.left && this.can_run(-1) && this.meters_run > 0) {
+            this.direction = -1
+            if (this.meters_run < 300) this.run()
+            this.meters_run--
+            this.rotation = -this.jump_strength * 2
+        }
+        if (is_key_down.right && this.can_run(1)) {
+            this.direction = 1
+            if (this.meters_run < 300) this.run()
+            this.meters_run++
+        }
+
+        if (!is_key_down.left && !is_key_down.right)
+            this.direction = 0
 
         // TODO: Butter collection
 
@@ -214,18 +235,22 @@ class Player extends Actor {
         return true
     }
 
+    can_run(dir) {
+        // TODO
+        return true
+    }
+
     fall() {
         if (this.is_on_platform()) {
             this.jump_strength = 0
             this.jump_count = 0
             this.rotation = 0
             this.is_jumping = false
-        } else this.jump_strength += GRAVITY
+        } else this.jump_strength += Player.GRAVITY
         this.y += this.jump_strength
     }
 
     run() {
         this.x += this.direction * this.speed
     }
-
 }
