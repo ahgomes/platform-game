@@ -11,6 +11,7 @@ async function init() {
         //load_image(canvas.toDataURL()),
         load_image('images/background.jpg'),
         load_image('images/brick.jpg'),
+        load_image('images/bread.png'),
     ])
 
     result.forEach((img) => {
@@ -32,9 +33,22 @@ async function init() {
     if (!loaded) return
 
     // TODO: initiate actors for game play
-    actors['background'] = [
+    actors['backgrounds'] = [
         new Background(0, {image: images.background}),
-        new Background(1, {image: images.background})]
+        new Background(1, {image: images.background}) ]
+
+    actors['platforms'] = [
+        new Actor({
+            x: 0,
+            width: 500, height: 80,
+            image: images.brick
+        })]
+
+    actors['player'] = new Player({
+        x: 100,
+        y: actors.platforms[0].y - (images.bread.height / 2) + 2,
+        image: images.bread })
+
 
     inplay = true
     animate()
@@ -44,6 +58,8 @@ function animate() {
     inplay = false
 
     // TODO: animate like ya obvi
+
+    console.log(animate);
 
     Object.entries(actors).forEach(([_, value]) => {
         if (Array.isArray(value)) {

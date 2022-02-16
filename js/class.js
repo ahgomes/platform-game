@@ -44,6 +44,8 @@ class Background extends Actor {
     constructor(loc = -1, prop = {}) {
         super(prop)
         this.x = loc * this.width
+        this.scale_to_fill()
+        this.y = canvas.height - this.height
     }
 
     scale_to_fill() {
@@ -57,37 +59,87 @@ class Background extends Actor {
 class Player extends Actor {
     static State = {
         ALIVE: 'alive',
-        DEAD: 'dead',
+        BIRD_DEATH: 'eaten',
+        TOASTER_DEATH: 'burned',
+        FALLING_DEATH: 'fallen',
+        ZONE_DEATH: 'zoned'
     }
 
     static GRAVITY = 1
 
     constructor(prop = {}) {
         super(prop)
-
+        this.direction = 0
+        this.speed = 1
+        this.jump_strength = 0
+        this.can_jump = true
+        this.is_jumping = false
+        this.jump_count = 0
+        this.meters_run = 0
+        this.butter_count = 0
+        this.state = Player.State.ALIVE
     }
 
     act() {
+        switch (this.state) {
+            case Player.State.BIRD_DEATH:
+                // TODO
+                break;
+            case Player.State.TOASTER_DEATH:
+                this.image = images['burnt-bread']
+                break;
+            case Player.State.FALLING_DEATH:
+                this.y += this.height
+                break;
+            case Player.State.ZONE_DEATH:
+                this.image = images['GF-bread']
+                this.rotation = 30
+                this.y += 5
+                break;
+        }
+
+        if (this.state != Player.State.ALIVE) {
+            this.direction = 0
+            this.jump_strength = 0
+            return
+        }
+
+        if (this.can_jump && this.jump_count < 2) {
+            this.jump_strength = -15
+            this.can_jump = false
+            this.is_jumping = true
+            this.jump_count++
+            this.y += this.jump_strength
+        }
+
+        if (this.is_jumping) this.roation = this.jump_strength * 2
+
+        this.fall()
+
+        // TODO: Key interaction
+
+        // TODO: Butter collection
+
+        return this
+    }
+
+    is_on_platform() {
         // TODO
+        return true
     }
 
     fall() {
-        // TODO
-    }
-
-    jump() {
-        // TODO
+        if (this.is_on_platform()) {
+            this.jump_strength = 0
+            this.jump_count = 0
+            this.rotation = 0
+            this.is_jumping = false
+        } else this.jump_strength += GRAVITY
+        this.y += this.jump_strength
     }
 
     run() {
-        // TODO
+        this.x += this.direction * this.speed
     }
+
 }
-
-
-/* for background
-let img_v = img.value
-let scale = Math.max(canvas.width / img_v.width, canvas.height / img_v.height)
-console.log(scale);
-c.drawImage(img.value, 0, canvas.height - img_v.height * scale, img_v.width * scale, img_v.height * scale)
-*/
