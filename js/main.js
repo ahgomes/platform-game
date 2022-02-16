@@ -2,11 +2,11 @@ const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
 let default_image
-let middle
+let center, middle
 
 function setup_canvas() {
     const margin = 20
-    const border = {width: 20, type: "solid", color: "#2d2d2d"}
+    const border = {width: 10, type: "solid", color: "#2d2d2d"}
 
     canvas.height = window.innerHeight - (margin * 2) - (border.width * 2)
     canvas.width = canvas.height * (4 / 3)
@@ -17,7 +17,7 @@ function setup_canvas() {
     canvas.style.margin = `${margin}px auto`
     canvas.style.border = `${border.width}px ${border.type} ${border.color}`
 
-    c.font='1em Courier New'
+    c.font = '1em Courier New'
     c.fillStyle = '#000'
     c.fillRect(0, 0, canvas.width, canvas.height)
 }
@@ -25,9 +25,9 @@ function setup_canvas() {
 function load_image(url) {
     let img = new Image()
     return new Promise((resolve, reject) => {
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
+        img.onload = () => resolve(img)
+        img.onerror = reject
+        img.src = url
     })
 }
 
