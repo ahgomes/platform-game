@@ -33,20 +33,16 @@ async function init() {
     if (!loaded) return
 
     // TODO: initiate actors for game play
-    actors['backgrounds'] = [
+    actors['bkgds'] = [
         new Background(0, {image: images.background}),
         new Background(1, {image: images.background}) ]
 
-    actors['platforms'] = [
-        new Actor({
-            x: 0,
-            width: 500, height: 80,
-            image: images.brick
-        })]
+    actors['p_sets'] = [
+        new Platform_Set({instruc: 'ssbs'}) ]
 
     actors['player'] = new Player({
         x: 100,
-        y: actors.platforms[0].y - (images.bread.height / 2) + 2,
+        y: actors.p_sets[0].platforms[0].y - (images.bread.height / 2) + 2,
         image: images.bread })
 
 
@@ -73,4 +69,4 @@ function animate() {
     if (inplay && loaded) requestAnimationFrame(animate)
 }
 
-document.onload = init()
+window.onload = init()

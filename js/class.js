@@ -56,6 +56,92 @@ class Background extends Actor {
     }
 }
 
+// QUESTION: removing actors from world
+
+class Platform_Set extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+        this.platforms = []
+        this.instruc = prop.instruc || Platform_Set.rand_platform_string()
+        this.create_platform_group(prop.start_x || 0)
+    }
+
+    draw() {
+        console.log(JSON.stringify(this.instruc), this.platforms);
+        this.platforms.forEach(p => p.draw())
+    }
+
+    create_platform_group(start_x) {
+        // TODO: add toasters
+        // TODO: add gluten-free zones
+        // TODO: add falling
+        let form = this.instruc.split('')
+        let prev_width = 0
+        form.forEach((ch, i) => {
+            let to_add
+            let x = start_x + prev_width
+
+            switch (ch) {
+                case 'b': // box
+                    to_add = new Actor({ x: x,
+                        width: 100, height: 100, image: images.brick })
+                    break
+                case 's': // small
+                    to_add = new Actor({ x: x,
+                        width: 200, height: 50, image: images.brick })
+                    break
+                case 'm': // medium
+                    to_add = new Actor({ x: x,
+                        width: 100, height: 150, image: images.brick })
+                    break
+                case 't': // tall
+                    to_add = new Actor({ x: x,
+                        width: 150, height: 200, image: images.brick })
+                    break
+                case 'f': // floating
+                    if (i > 0 && form[i - 1] != ' ')
+                        prev_width += 100
+                    to_add = new Actor({ x: x + 100, y: canvas.height - 250,
+                        width: 100, height: 30, image: images.brick })
+                    if (i < form.length - 1 && form[i + 1] != ' ')
+                        prev_width += 100
+                    break
+                case ' ': // hole
+                    prev_width += 100
+                    break
+                case 'd': // drop
+                case 'g': // gluten-free zone
+                case 'l': // long
+                default:
+                    to_add = new Actor({ x: x,
+                        width: canvas.width, height: 50, image: images.brick })
+                    break
+            }
+
+            if (ch != ' ') prev_width += to_add.width
+
+            if (to_add) this.platforms.push(to_add)
+        })
+
+        this.width = prev_width
+    }
+
+    static rand_platform_string() {
+        let types = ['l', 's', 'b', 'm', 't', 'f', 'd', 'g', 'h', ' ']
+        let rand_str = ''
+        let platform_count = rand(1, 5)
+
+        for (let i = 0; i < platform_count; i++) {
+            if (i != 0 && i != platform_count - 1
+                    && rand_str.lastIndexOf(' ') != i - 1) {
+                rand_str += types[rand(0, types.length)]
+            } else rand_str += types[rand(0, types.length - 1)]
+        }
+
+        return rand_str
+    }
+}
+
 class Player extends Actor {
     static State = {
         ALIVE: 'alive',
@@ -84,18 +170,18 @@ class Player extends Actor {
         switch (this.state) {
             case Player.State.BIRD_DEATH:
                 // TODO
-                break;
+                break
             case Player.State.TOASTER_DEATH:
                 this.image = images['burnt-bread']
-                break;
+                break
             case Player.State.FALLING_DEATH:
                 this.y += this.height
-                break;
+                break
             case Player.State.ZONE_DEATH:
                 this.image = images['GF-bread']
                 this.rotation = 30
                 this.y += 5
-                break;
+                break
         }
 
         if (this.state != Player.State.ALIVE) {
