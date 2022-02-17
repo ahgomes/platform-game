@@ -53,8 +53,8 @@ class Actor {
 class Background extends Actor {
     constructor(loc = -1, prop = {}) {
         super(prop)
-        this.x = loc * this.width
         this.scale_to_fill()
+        this.x = loc * this.width
         this.y = canvas.height - this.height
     }
 
@@ -74,6 +74,7 @@ class Platform_Set extends Actor {
         this.platforms = []
         this.instruc = prop.instruc || Platform_Set.rand_platform_string()
         this.create_platform_group(prop.start_x || 0)
+        console.log(JSON.stringify(this.instruc), this.platforms);
     }
 
     draw() {
@@ -82,7 +83,7 @@ class Platform_Set extends Actor {
     }
 
     move(player) {
-        this.platforms.forEach(p => p.x = player.direction * player.speed)
+        this.platforms.forEach(p => p.x -= player.direction * player.speed)
     }
 
     get_x() {
@@ -103,7 +104,7 @@ class Platform_Set extends Actor {
             switch (ch) {
                 case 'b': // box
                     to_add = new Actor({ x: x,
-                        width: 100, height: 100, image: images.brick })
+                        width: 120, height: 100, image: images.brick })
                     break
                 case 's': // small
                     to_add = new Actor({ x: x,
@@ -111,7 +112,7 @@ class Platform_Set extends Actor {
                     break
                 case 'm': // medium
                     to_add = new Actor({ x: x,
-                        width: 100, height: 150, image: images.brick })
+                        width: 200, height: 150, image: images.brick })
                     break
                 case 't': // tall
                     to_add = new Actor({ x: x,
@@ -119,14 +120,14 @@ class Platform_Set extends Actor {
                     break
                 case 'f': // floating
                     if (i > 0 && form[i - 1] != ' ')
-                        prev_width += 100
+                        prev_width += GAP_LENGTH
                     to_add = new Actor({ x: x + 100, y: canvas.height - 250,
                         width: 100, height: 30, image: images.brick })
                     if (i < form.length - 1 && form[i + 1] != ' ')
-                        prev_width += 100
+                        prev_width += GAP_LENGTH
                     break
                 case ' ': // hole
-                    prev_width += 100
+                    prev_width += GAP_LENGTH
                     break
                 case 'd': // drop
                 case 'g': // gluten-free zone
@@ -226,13 +227,13 @@ class Player extends Actor {
         if (!is_key_down.up) this.can_jump = true
         if (is_key_down.left && this.can_run(-1) && this.meters_run > 0) {
             this.direction = -1
-            if (this.meters_run < 300) this.run()
+            if (this.meters_run < START_SPACE) this.run()
             this.meters_run--
             this.rotation = -this.jump_strength * 1
         }
         if (is_key_down.right && this.can_run(1)) {
             this.direction = 1
-            if (this.meters_run < 300) this.run()
+            if (this.meters_run < START_SPACE) this.run()
             this.meters_run++
         }
 
@@ -245,12 +246,14 @@ class Player extends Actor {
     }
 
     can_run(dir) {
-        return get_platform_at_offset(this.speed * this.direction, 0) == null
+        return get_platform_at_offset(this.speed * this.direction - 1, 0) == null
     }
 
     fall() {
         if (is_on_platform()) {
-            this.y = get_platform_at_offset(1, 1).y - this.height
+            let ground = get_platform_at_offset(0, 1)
+            if (ground != null)
+                this.y = ground.y - this.height
             this.jump_strength = 0
             this.jump_count = 0
             this.rotation = 0

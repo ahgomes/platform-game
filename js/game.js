@@ -1,9 +1,13 @@
 let inplay = false
+let game_over = false
 let loaded = false
 
 let images = {}
 let actors = {}
 let player
+
+const GAP_LENGTH = 150
+const START_SPACE = 30
 
 async function init() {
     await setup_canvas()
@@ -39,11 +43,12 @@ async function init() {
         new Background(1, {image: images.background}) ]
 
     actors['p_sets'] = [
-        new Platform_Set({instruc: 'ssbs'}) ]
+        new Platform_Set({instruc: 'ssbs s'}) ]
 
     player = new Player({
         x: 100,
         y: actors.p_sets[0].platforms[0].y - images.bread.height,
+        width: 80, height: 40,
         image: images.bread })
     actors['player'] = player
 
@@ -53,12 +58,31 @@ async function init() {
 }
 
 function animate() {
-    //inplay = false
+    console.log(player.state)
 
-    //c.clearRect(0, 0, canvas.width, canvas.height)
+    if (is_game_over()) {
+        if (player.y > canvas.height)
+            player.state = Player.State.FALLING_DEATH
+        // TODO: Game over screen
+        console.log(player.state)
+        console.log('game over')
+        game_over = true
+        inplay = false
+        return
+    }
+
+
+    c.clearRect(0, 0, canvas.width, canvas.height)
 
     // TODO: animate like ya obvi
-    console.log('animate');
+
+    let last_p_sets = actors.p_sets[actors.p_sets.length - 1]
+    if (last_p_sets.get_x() + GAP_LENGTH < canvas.width)
+        actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
+
+    if (player.meters_run >= START_SPACE && player.direction != 0
+            && player.can_run(player.direction))
+        move_game()
 
     Object.entries(actors).forEach(([_, value]) => {
         if (Array.isArray(value)) {
@@ -68,30 +92,42 @@ function animate() {
         value.update()
     })
 
-    let plate = actors.p_sets[0].platforms[0]
-
+    //let plate = actors.p_sets[0].platforms[0]
     //console.log(Actor.is_intersecting_offset(player, plate, 10, 10));
 
     if (inplay && loaded) requestAnimationFrame(animate)
 }
 
-function is_on_platform() {
-    let platforms = [actors.p_sets[0].platforms].flat()
+function move_game() {
+    actors.bkgds.forEach(b => {
+        if (b.x + b.width < 0) b.x = b.width
+        b.x -= player.direction
+    })
 
-    for (let platform of platforms) {
-        if (Actor.is_intersecting(player, platform))
-            return true
+    actors.p_sets.forEach(p => p.move(player) )
+}
+
+function is_game_over() {
+    return player.y > canvas.height || player.state != Player.State.ALIVE
+}
+
+function is_on_platform() {
+    for (let set of actors.p_sets) {
+        for (let platform of set.platforms) {
+            if (Actor.is_intersecting(player, platform))
+                return true
+        }
     }
 
     return false
 }
 
 function get_platform_at_offset(x, y) {
-    let platforms = [actors.p_sets[0].platforms].flat()
-
-    for (let platform of platforms) {
-        if (Actor.is_intersecting_offset(player, platform, x, y))
-            return platform
+    for (let set of actors.p_sets) {
+        for (let platform of set.platforms) {
+            if (Actor.is_intersecting_offset(player, platform, x, y))
+                return platform
+        }
     }
 
     return null
