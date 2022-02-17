@@ -81,6 +81,7 @@ class Pigeon extends Actor {
     }
 
     act() {
+        if (!this.state) return this
 
         if (!this.has_hit_player) {
             this.image = this.images[
@@ -160,10 +161,12 @@ class Platform_Set extends Actor {
                         width: 150, height: 200, image: images.brick })
                     break
                 case 'f': // floating
-                    if (i > 0 && form[i - 1] != ' ')
+                    if (i > 0 && (form[i - 1] != ' ' || form[i - 1] != 'f')) {
                         prev_width += GAP_LENGTH
-                    to_add = new Actor({ x: x + 100, y: canvas.height - 250,
-                        width: 100, height: 30, image: images.brick })
+                        x += GAP_LENGTH
+                    }
+                    to_add = new Actor({ x: x, y: canvas.height - GAP_LENGTH,
+                        width: GAP_LENGTH, height: 30, image: images.brick })
                     if (i < form.length - 1 && form[i + 1] != ' ')
                         prev_width += GAP_LENGTH
                     break
@@ -188,7 +191,7 @@ class Platform_Set extends Actor {
     }
 
     static rand_platform_string() {
-        let types = ['l', 's', 'b', 'm', 't', 'f', 'd', 'g', 'h', ' ']
+        let types = ['l', 's', 'b', 'm', 't', 'f', 'd', 'g', ' ']
         let rand_str = ''
         let platform_count = rand(1, 5)
 

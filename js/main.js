@@ -4,8 +4,8 @@ const c = canvas.getContext('2d')
 let center, middle
 
 function setup_canvas() {
-    const margin = 20
-    const border = {width: 10, type: "solid", color: "#2d2d2d"}
+    const margin = 50
+    const border = {width: 50, type: "solid", color: "#2d2d2d"}
 
     canvas.height = window.innerHeight - (margin * 2) - (border.width * 2)
     canvas.width = canvas.height * (4 / 3)

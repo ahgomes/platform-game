@@ -56,7 +56,7 @@ async function init() {
         new Background(1, {image: images.background}) ]
 
     actors['p_sets'] = [
-        new Platform_Set({instruc: 'ssbs s'}) ]
+        new Platform_Set({instruc: 'ssbs s'})]
 
     player = new Player({
         x: 100,
@@ -116,7 +116,7 @@ function animate() {
             && player.can_run(player.direction))
         move_game()
 
-    if (!actors.pigeon.state) {
+    if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
         actors.pigeon.x = canvas.width + GAP_LENGTH
         actors.pigeon.y = GAP_LENGTH
         actors.pigeon.state = 1
@@ -141,7 +141,7 @@ function animate() {
 
 function move_game() {
     actors.bkgds.forEach(b => {
-        if (b.x + b.width < 0) b.x = b.width
+        if (b.x + b.width < 0) b.x = b.width - 1
         b.x -= player.direction
     })
 
