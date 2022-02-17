@@ -66,6 +66,47 @@ class Background extends Actor {
     }
 }
 
+class Pigeon extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+        this.width = 105
+        this.height = 114
+        this.images = prop.images
+        this.images_b = prop.images_b
+        this.image_index = 0
+        this.has_hit_player = false
+        this.direction = 1
+        this.state = 0
+        this.flap_rate = 5
+    }
+
+    act() {
+
+        if (!this.has_hit_player) {
+            this.image = this.images[
+                Math.floor(this.image_index++ / this.flap_rate)]
+        } else {
+            this.image = this.images_b[
+                Math.floor(this.image_index++ / this.flap_rate)]
+        }
+
+        if (this.image_index >= this.images.length * this.flap_rate)
+            this.image_index = 0
+
+        this.fly()
+
+        // TODO: player collision
+        // when hit change width = 115
+
+        return this
+    }
+
+    fly() {
+        this.x -= 5
+        this.y += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
+    }
+}
+
 // QUESTION: removing actors from world?
 
 class Platform_Set extends Actor {

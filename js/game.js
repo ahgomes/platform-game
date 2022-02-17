@@ -12,11 +12,24 @@ const START_SPACE = 30
 async function init() {
     await setup_canvas()
 
+
     const result = await Promise.allSettled([
         //load_image(canvas.toDataURL()),
         load_image('images/background.jpg'),
         load_image('images/bread.png'),
         load_image('images/brick.jpg'),
+        load_image('images/pigeon1.png'),
+        load_image('images/pigeon2.png'),
+        load_image('images/pigeon3.png'),
+        load_image('images/pigeon4.png'),
+        load_image('images/pigeon5.png'),
+        load_image('images/pigeon6.png'),
+        load_image('images/pigeon-wBread1.png'),
+        load_image('images/pigeon-wBread2.png'),
+        load_image('images/pigeon-wBread3.png'),
+        load_image('images/pigeon-wBread4.png'),
+        load_image('images/pigeon-wBread5.png'),
+        load_image('images/pigeon-wBread6.png'),
     ])
 
     result.forEach((img) => {
@@ -52,6 +65,25 @@ async function init() {
         image: images.bread })
     actors['player'] = player
 
+    let p_imgs = []
+    let p_imgs_b = []
+
+    for (let i = 0, b = false; i < 6;) {
+        if (!b) p_imgs.push(images['pigeon' + (i + 1)])
+        else p_imgs_b.push(images['pigeon-wBread' + (i + 1)])
+
+        if (++i == 6 && !b) {
+            i = 0; b = true
+        }
+    }
+
+    actors['pigeon'] = new Pigeon({
+        x: canvas.width + GAP_LENGTH,
+        y: GAP_LENGTH,
+        images: p_imgs,
+        images_b: p_imgs_b,
+    })
+
 
     inplay = true
     animate()
@@ -84,6 +116,15 @@ function animate() {
             && player.can_run(player.direction))
         move_game()
 
+    if (!actors.pigeon.state) {
+        actors.pigeon.x = canvas.width + GAP_LENGTH
+        actors.pigeon.y = GAP_LENGTH
+        actors.pigeon.state = 1
+    }
+
+    if (actors.pigeon.state && actors.pigeon.x < -GAP_LENGTH)
+        actors.pigeon.state = 0
+
     Object.entries(actors).forEach(([_, value]) => {
         if (Array.isArray(value)) {
             value.forEach(el => el.update())
@@ -104,7 +145,9 @@ function move_game() {
         b.x -= player.direction
     })
 
-    actors.p_sets.forEach(p => p.move(player) )
+    actors.p_sets.forEach(p => p.move(player))
+
+    if (actors.pigeon) actors.pigeon.x -= player.direction * player.speed
 }
 
 function is_game_over() {
