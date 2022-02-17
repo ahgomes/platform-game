@@ -36,6 +36,18 @@ class Actor {
         this.act()
             .draw()
     }
+
+    static is_intersecting(a, b) {
+        return !(a.x > b.x + b.width || b.x > a.x + a.width)
+                && !(a.y > b.y + b.height || b.y > a.y + a.height)
+    }
+
+    static is_intersecting_offset(a, b, x, y) {
+        x--; y--
+        return !(a.x > b.x + b.width - x || b.x > a.x + a.width + x)
+                && !(a.y > b.y + b.height - y || b.y > a.y + a.height + y)
+    }
+
 }
 
 class Background extends Actor {
@@ -163,7 +175,7 @@ class Player extends Actor {
     constructor(prop = {}) {
         super(prop)
         this.direction = 0
-        this.speed = 5
+        this.speed = 4
         this.jump_strength = 0
         this.can_jump = true
         this.is_jumping = false
@@ -205,7 +217,9 @@ class Player extends Actor {
             this.y += this.jump_strength
         }
 
-        if (this.is_jumping) this.rotation = this.jump_strength * 2
+        if (this.is_jumping) {
+            this.rotation = (this.jump_strength) ? this.jump_strength * 2 : 0.1
+        }
 
         this.fall()
 
@@ -214,7 +228,7 @@ class Player extends Actor {
             this.direction = -1
             if (this.meters_run < 300) this.run()
             this.meters_run--
-            this.rotation = -this.jump_strength * 2
+            this.rotation = -this.jump_strength * 1
         }
         if (is_key_down.right && this.can_run(1)) {
             this.direction = 1
@@ -230,18 +244,13 @@ class Player extends Actor {
         return this
     }
 
-    is_on_platform() {
-        // TODO
-        return true
-    }
-
     can_run(dir) {
-        // TODO
-        return true
+        return get_platform_at_offset(this.speed * this.direction, 0) == null
     }
 
     fall() {
-        if (this.is_on_platform()) {
+        if (is_on_platform()) {
+            this.y = get_platform_at_offset(1, 1).y - this.height
             this.jump_strength = 0
             this.jump_count = 0
             this.rotation = 0

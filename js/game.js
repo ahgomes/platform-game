@@ -3,6 +3,7 @@ let loaded = false
 
 let images = {}
 let actors = {}
+let player
 
 async function init() {
     await setup_canvas()
@@ -40,10 +41,11 @@ async function init() {
     actors['p_sets'] = [
         new Platform_Set({instruc: 'ssbs'}) ]
 
-    actors['player'] = new Player({
+    player = new Player({
         x: 100,
         y: actors.p_sets[0].platforms[0].y - images.bread.height,
         image: images.bread })
+    actors['player'] = player
 
 
     inplay = true
@@ -51,12 +53,11 @@ async function init() {
 }
 
 function animate() {
-    inplay = false
-    
-    c.clearRect(0, 0, canvas.width, canvas.height)
+    //inplay = false
+
+    //c.clearRect(0, 0, canvas.width, canvas.height)
 
     // TODO: animate like ya obvi
-
     console.log('animate');
 
     Object.entries(actors).forEach(([_, value]) => {
@@ -67,8 +68,33 @@ function animate() {
         value.update()
     })
 
+    let plate = actors.p_sets[0].platforms[0]
+
+    //console.log(Actor.is_intersecting_offset(player, plate, 10, 10));
 
     if (inplay && loaded) requestAnimationFrame(animate)
+}
+
+function is_on_platform() {
+    let platforms = [actors.p_sets[0].platforms].flat()
+
+    for (let platform of platforms) {
+        if (Actor.is_intersecting(player, platform))
+            return true
+    }
+
+    return false
+}
+
+function get_platform_at_offset(x, y) {
+    let platforms = [actors.p_sets[0].platforms].flat()
+
+    for (let platform of platforms) {
+        if (Actor.is_intersecting_offset(player, platform, x, y))
+            return platform
+    }
+
+    return null
 }
 
 let is_key_down = {
