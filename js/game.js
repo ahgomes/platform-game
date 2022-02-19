@@ -6,7 +6,8 @@ let actors = {}
 let player
 
 const GAP_LENGTH = 150
-const START_SPACE = 30
+const START_SPACE = 130
+const MAX_P_SETS = 10
 
 async function init() {
     if (!loaded) {
@@ -71,8 +72,6 @@ async function init() {
 }
 
 function animate() {
-    console.log(player.state)
-
     if (is_game_over()) {
         if (player.y - player.height > canvas.height) {
             if (player.state == Player.State.ALIVE)
@@ -108,8 +107,11 @@ function animate() {
     if (last_p_sets.get_x() + GAP_LENGTH < canvas.width)
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
-    if (player.meters_run >= START_SPACE && player.direction != 0
-            && player.can_run(player.direction))
+    if (actors.p_sets.length > MAX_P_SETS)
+        actors.p_sets.shift()
+
+    if (player.x >= START_SPACE && player.direction != 0
+            && player.can_run(player.direction) && !stop_back())
         move_game()
 
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
@@ -147,6 +149,14 @@ function restart() {
     init()
 }
 
+function stop_back() {
+    if (player.direction >= 0) return false
+
+    let [b1, b2] = actors.bkgds
+    return (b1.x >= -1 && b2.x >= canvas.width - 1) ||
+        (b2.x >= -1 && b1.x >= canvas.width - 1)
+}
+
 function move_game() {
     if (actors.pigeon) actors.pigeon.x -= player.direction * player.speed
 
@@ -159,7 +169,7 @@ function move_game() {
 
     actors.p_sets.forEach(p => p.move(player))
 
-    actors.meter_counter.num = Math.ceil(player.meters_run / 50)
+    actors.meter_counter.num = Math.floor(player.meters_run / 50)
 }
 
 function game_over_screen() {

@@ -182,8 +182,6 @@ class Pigeon extends Actor {
     }
 }
 
-// QUESTION: removing actors from world?
-
 class Platform extends Actor {
     constructor(prop = {}) {
         super(prop)
@@ -223,6 +221,7 @@ class Gluten_Free_Zone extends Actor {
 class Platform_Set extends Actor {
     constructor(prop = {}) {
         super(prop)
+        this.x = prop.start_x || 0
         this.actors = []
         this.butter_pattern = prop.butter_pattern
         this.buttered = (this.butter_pattern) ? true : false
@@ -242,20 +241,25 @@ class Platform_Set extends Actor {
 
     move(player) {
         this.actors.forEach(a => a.x -= player.direction * player.speed)
+        this.x -= player.direction * player.speed
     }
 
     get_x() {
-        let last = this.actors[this.actors.length - 1]
+        let last
+        for (let i = this.actors.length - 1; i >= 0; i--) {
+            last = this.actors[i]
+            if (last instanceof Platform) break
+        }
         return last.x + last.width
     }
 
     create_platform_group(start_x) {
         // TODO: add toasters
         let form = this.instruc.split('')
-        let prev_width = 0
+        let prev_width = this.x
         form.forEach((ch, i) => {
             let to_add
-            let x = start_x + prev_width
+            let x = prev_width
 
             switch (ch) {
                 case 'b': // box
@@ -308,7 +312,6 @@ class Platform_Set extends Actor {
                     }
                     break
                 case 'l': // long
-                default:
                     to_add = new Platform({ x: x,
                         width: canvas.width, height: 50, image: images.brick })
                     break
@@ -414,22 +417,20 @@ class Player extends Actor {
         this.fall()
 
         if (!is_key_down.up) this.can_jump = true
-        if (is_key_down.left && this.can_run(-1) && this.meters_run > 0) {
+        if (is_key_down.left && this.can_run(-1) && this.x > 0) {
             this.direction = -1
-            if (this.meters_run < START_SPACE) this.run()
+            if (this.x < START_SPACE || stop_back()) this.run()
             this.meters_run--
             this.rotation = -this.jump_strength * 1
         }
         if (is_key_down.right && this.can_run(1)) {
             this.direction = 1
-            if (this.meters_run < START_SPACE) this.run()
+            if (this.x < START_SPACE || stop_back()) this.run()
             this.meters_run++
         }
 
         if (!is_key_down.left && !is_key_down.right)
             this.direction = 0
-
-        // TODO: Butter collection
 
         return this
     }
@@ -439,6 +440,7 @@ class Player extends Actor {
     }
 
     fall() {
+        //console.log(this.rotation, this.jump_strength);
         if (is_on_platform()) {
             let ground = get_platform_at_offset(0, 1)
             if (ground != null)
@@ -447,7 +449,9 @@ class Player extends Actor {
             this.jump_count = 0
             this.rotation = 0
             this.is_jumping = false
-        } else this.jump_strength += Player.GRAVITY
+        } else {
+            this.jump_strength += Player.GRAVITY
+        }
         this.y += this.jump_strength
     }
 
