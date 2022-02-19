@@ -47,7 +47,6 @@ class Actor {
         return !(a.x > b.x + b.width - x || b.x > a.x + a.width + x)
                 && !(a.y > b.y + b.height - y || b.y > a.y + a.height + y)
     }
-
 }
 
 class Background extends Actor {
@@ -96,8 +95,11 @@ class Pigeon extends Actor {
 
         this.fly()
 
-        // TODO: player collision
-        // when hit change width = 115
+        if (is_intersecting_player(this)) {
+            this.has_hit_player = true
+            this.width = 115
+            is_bird_death(true)
+        }
 
         return this
     }
@@ -110,6 +112,42 @@ class Pigeon extends Actor {
 
 // QUESTION: removing actors from world?
 
+class Platform extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+    }
+}
+
+class Falling extends Platform {
+    constructor(prop = {}) {
+        super(prop)
+        this.falling_strength = 0
+    }
+
+    act() {
+        if (is_intersecting_player(this)) {
+            this.y += this.falling_strength
+            this.falling_strength += 0.2
+        }
+
+        return this
+    }
+
+}
+
+class Gluten_Free_Zone extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+    }
+
+    act() {
+        if (is_intersecting_player(this))
+            is_zone_death(true)
+
+        return this
+    }
+}
+
 class Platform_Set extends Actor {
     constructor(prop = {}) {
         super(prop)
@@ -117,6 +155,11 @@ class Platform_Set extends Actor {
         this.instruc = prop.instruc || Platform_Set.rand_platform_string()
         this.create_platform_group(prop.start_x || 0)
         console.log(JSON.stringify(this.instruc), this.platforms);
+    }
+
+    act() {
+        this.platforms.forEach(p => p.act())
+        return this
     }
 
     draw() {
@@ -135,8 +178,6 @@ class Platform_Set extends Actor {
 
     create_platform_group(start_x) {
         // TODO: add toasters
-        // TODO: add gluten-free zones
-        // TODO: add falling
         let form = this.instruc.split('')
         let prev_width = 0
         form.forEach((ch, i) => {
@@ -145,39 +186,57 @@ class Platform_Set extends Actor {
 
             switch (ch) {
                 case 'b': // box
-                    to_add = new Actor({ x: x,
+                    to_add = new Platform({ x: x,
                         width: 120, height: 100, image: images.brick })
                     break
                 case 's': // small
-                    to_add = new Actor({ x: x,
+                    to_add = new Platform({ x: x,
                         width: 200, height: 50, image: images.brick })
                     break
                 case 'm': // medium
-                    to_add = new Actor({ x: x,
+                    to_add = new Platform({ x: x,
                         width: 200, height: 150, image: images.brick })
                     break
                 case 't': // tall
-                    to_add = new Actor({ x: x,
+                    to_add = new Platform({ x: x,
                         width: 150, height: 200, image: images.brick })
                     break
+                case 'h': // tall
+                    to_add = new Platform({ x: x,
+                        width: 100, height: 150, image: images.brick })
+                    break
                 case 'f': // floating
-                    if (i > 0 && (form[i - 1] != ' ' || form[i - 1] != 'f')) {
+                case 'd': // drop
+                    if (i != 0 && form[i - 1] != ' ' && form[i - 1] != 'f'
+                            && form[i - 1] != 'd') {
                         prev_width += GAP_LENGTH
                         x += GAP_LENGTH
                     }
-                    to_add = new Actor({ x: x, y: canvas.height - GAP_LENGTH,
-                        width: GAP_LENGTH, height: 30, image: images.brick })
+                    let prop = { x: x, y: canvas.height - GAP_LENGTH,
+                        width: GAP_LENGTH, height: 30, image: images.brick }
+                    to_add = (ch == 'f') ? new Platform(prop)
+                        : new Falling(prop)
                     if (i < form.length - 1 && form[i + 1] != ' ')
                         prev_width += GAP_LENGTH
                     break
                 case ' ': // hole
                     prev_width += GAP_LENGTH
                     break
-                case 'd': // drop
                 case 'g': // gluten-free zone
+                    to_add = new Gluten_Free_Zone({ x: x,
+                        y: canvas.height - images['GF-zone'].height + 20,
+                        image: images['GF-zone'] })
+                    if (Math.random() < 0.4) {
+                        this.platforms.push(new Falling({
+                            x: x + to_add.width / 2 - 5,
+                            y: canvas.height - to_add.height - 100,
+                            width: to_add.width / 2, height: 30,
+                            image: images.brick }))
+                    }
+                    break
                 case 'l': // long
                 default:
-                    to_add = new Actor({ x: x,
+                    to_add = new Platform({ x: x,
                         width: canvas.width, height: 50, image: images.brick })
                     break
             }
@@ -191,13 +250,13 @@ class Platform_Set extends Actor {
     }
 
     static rand_platform_string() {
-        let types = ['l', 's', 'b', 'm', 't', 'f', 'd', 'g', ' ']
+        let types = ['l', 's', 'b', 'm', 't', 'f', 'd', 'h', 'hgh', ' ']
         let rand_str = ''
-        let platform_count = rand(1, 5)
+        let platform_count = rand(3, 7)
 
         for (let i = 0; i < platform_count; i++) {
             if (i != 0 && i != platform_count - 1
-                    && rand_str.lastIndexOf(' ') != i - 1) {
+                    && rand_str[i - 1] != ' ') {
                 rand_str += types[rand(0, types.length)]
             } else rand_str += types[rand(0, types.length - 1)]
         }
@@ -220,6 +279,7 @@ class Player extends Actor {
     constructor(prop = {}) {
         super(prop)
         this.direction = 0
+        this.fall_direction = 0
         this.speed = 4
         this.jump_strength = 0
         this.can_jump = true
@@ -233,7 +293,7 @@ class Player extends Actor {
     act() {
         switch (this.state) {
             case Player.State.BIRD_DEATH:
-                // TODO
+                this.width = 0
                 break
             case Player.State.TOASTER_DEATH:
                 this.image = images['burnt-bread']
@@ -243,15 +303,15 @@ class Player extends Actor {
                 break
             case Player.State.ZONE_DEATH:
                 this.image = images['GF-bread']
-                this.rotation = 30
-                this.y += 5
+                this.rotation += this.fall_direction * 0.25
+                this.y += 2
                 break
         }
 
         if (this.state != Player.State.ALIVE) {
             this.direction = 0
             this.jump_strength = 0
-            return
+            return this
         }
 
         if (is_key_down.up && this.can_jump && this.jump_count < 2) {

@@ -30,6 +30,8 @@ async function init() {
         load_image('images/pigeon-wBread4.png'),
         load_image('images/pigeon-wBread5.png'),
         load_image('images/pigeon-wBread6.png'),
+        load_image('images/GF-zone.png'),
+        load_image('images/GF-bread.png'),
     ])
 
     result.forEach((img) => {
@@ -93,27 +95,30 @@ function animate() {
     console.log(player.state)
 
     if (is_game_over()) {
-        if (player.y > canvas.height)
-            player.state = Player.State.FALLING_DEATH
-        // TODO: Game over screen
-        console.log(player.state)
-        console.log('game over')
+        if (player.y - player.height > canvas.height) {
+            if (player.state == Player.State.ALIVE)
+                player.state = Player.State.FALLING_DEATH
+            inplay = true
+        }
+
+        if ((player.state == Player.State.BIRD_DEATH && !actors.pigeon.state)
+                || player.state == Player.State.TOASTER_DEATH) {
+            inplay = true
+        }
+
         game_over = true
-        inplay = false
-        return
+
+        // TODO: Game over text
     }
 
-
     c.clearRect(0, 0, canvas.width, canvas.height)
-
-    // TODO: animate like ya obvi
 
     let last_p_sets = actors.p_sets[actors.p_sets.length - 1]
     if (last_p_sets.get_x() + GAP_LENGTH < canvas.width)
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
     if (player.meters_run >= START_SPACE && player.direction != 0
-            && player.can_run(player.direction))
+            && player.can_run(player.direction) && !game_over)
         move_game()
 
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
@@ -133,9 +138,6 @@ function animate() {
         value.update()
     })
 
-    //let plate = actors.p_sets[0].platforms[0]
-    //console.log(Actor.is_intersecting_offset(player, plate, 10, 10));
-
     if (inplay && loaded) requestAnimationFrame(animate)
 }
 
@@ -154,10 +156,31 @@ function is_game_over() {
     return player.y > canvas.height || player.state != Player.State.ALIVE
 }
 
+function is_zone_death(yes) {
+    if (player == undefined) return false
+    if (player.state == Player.State.ZONE_DEATH) return true
+    if (yes) {
+        player.state = Player.State.ZONE_DEATH
+        player.fall_direction = player.direction
+        return true
+    }
+}
+
+function is_bird_death(yes) {
+    if (player == undefined) return false
+    if (player.state == Player.State.BIRD_DEATH) return true
+    if (yes) {
+        player.state = Player.State.BIRD_DEATH
+        return true
+    }
+}
+
 function is_on_platform() {
+    if (actors == undefined) return false
     for (let set of actors.p_sets) {
         for (let platform of set.platforms) {
-            if (Actor.is_intersecting(player, platform))
+            if (Actor.is_intersecting(player, platform)
+                    && platform instanceof Platform)
                 return true
         }
     }
@@ -166,14 +189,20 @@ function is_on_platform() {
 }
 
 function get_platform_at_offset(x, y) {
+    if (actors == undefined) return null
     for (let set of actors.p_sets) {
         for (let platform of set.platforms) {
-            if (Actor.is_intersecting_offset(player, platform, x, y))
+            if (Actor.is_intersecting_offset(player, platform, x, y)
+                    && platform instanceof Platform)
                 return platform
         }
     }
 
     return null
+}
+
+function is_intersecting_player(actor) {
+    return Actor.is_intersecting(player, actor)
 }
 
 let is_key_down = {
