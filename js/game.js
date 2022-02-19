@@ -32,6 +32,7 @@ async function init() {
         load_image('images/pigeon-wBread6.png'),
         load_image('images/GF-zone.png'),
         load_image('images/GF-bread.png'),
+        load_image('images/butter.png')
     ])
 
     result.forEach((img) => {
@@ -62,7 +63,7 @@ async function init() {
 
     player = new Player({
         x: 100,
-        y: actors.p_sets[0].platforms[0].y - images.bread.height,
+        y: actors.p_sets[0].actors[0].y - images.bread.height,
         width: 80, height: 40,
         image: images.bread })
     actors['player'] = player
@@ -98,18 +99,20 @@ function animate() {
         if (player.y - player.height > canvas.height) {
             if (player.state == Player.State.ALIVE)
                 player.state = Player.State.FALLING_DEATH
-            inplay = true
+            inplay = false
         }
 
         if ((player.state == Player.State.BIRD_DEATH && !actors.pigeon.state)
                 || player.state == Player.State.TOASTER_DEATH) {
-            inplay = true
+            inplay = false
         }
 
         game_over = true
 
         // TODO: Game over text
     }
+
+    if (!inplay) return
 
     c.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -118,7 +121,7 @@ function animate() {
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
     if (player.meters_run >= START_SPACE && player.direction != 0
-            && player.can_run(player.direction) && !game_over)
+            && player.can_run(player.direction))
         move_game()
 
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
@@ -142,14 +145,16 @@ function animate() {
 }
 
 function move_game() {
+    if (actors.pigeon) actors.pigeon.x -= player.direction * player.speed
+
+    if (game_over) return
+
     actors.bkgds.forEach(b => {
         if (b.x + b.width < 0) b.x = b.width - 1
         b.x -= player.direction
     })
 
     actors.p_sets.forEach(p => p.move(player))
-
-    if (actors.pigeon) actors.pigeon.x -= player.direction * player.speed
 }
 
 function is_game_over() {
@@ -178,7 +183,7 @@ function is_bird_death(yes) {
 function is_on_platform() {
     if (actors == undefined) return false
     for (let set of actors.p_sets) {
-        for (let platform of set.platforms) {
+        for (let platform of set.actors) {
             if (Actor.is_intersecting(player, platform)
                     && platform instanceof Platform)
                 return true
@@ -191,7 +196,7 @@ function is_on_platform() {
 function get_platform_at_offset(x, y) {
     if (actors == undefined) return null
     for (let set of actors.p_sets) {
-        for (let platform of set.platforms) {
+        for (let platform of set.actors) {
             if (Actor.is_intersecting_offset(player, platform, x, y)
                     && platform instanceof Platform)
                 return platform
@@ -203,6 +208,11 @@ function get_platform_at_offset(x, y) {
 
 function is_intersecting_player(actor) {
     return Actor.is_intersecting(player, actor)
+}
+
+function butter_inc() {
+    player.butter_count++
+    console.log(player.butter_count)
 }
 
 let is_key_down = {

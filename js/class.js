@@ -49,6 +49,34 @@ class Actor {
     }
 }
 
+class Butter extends Actor {
+    static WIDTH = 65
+    static HEIGHT = 26
+
+    constructor(prop = {}) {
+        super(prop)
+        this.width = Butter.WIDTH
+        this.height = Butter.HEIGHT
+        this.is_collected = false
+    }
+
+    act() {
+        if (is_intersecting_player(this) && !this.is_collected) {
+            this.is_collected = true
+            butter_inc()
+        }
+
+        if (this.is_collected && this.width > 0) {
+            this.width -= 10
+            this.height -= 10
+            this.x += 5
+            this.y += 5
+        }
+
+        if (this.width < 0) this.width = 0
+    }
+}
+
 class Background extends Actor {
     constructor(loc = -1, prop = {}) {
         super(prop)
@@ -151,28 +179,27 @@ class Gluten_Free_Zone extends Actor {
 class Platform_Set extends Actor {
     constructor(prop = {}) {
         super(prop)
-        this.platforms = []
+        this.actors = []
         this.instruc = prop.instruc || Platform_Set.rand_platform_string()
         this.create_platform_group(prop.start_x || 0)
-        console.log(JSON.stringify(this.instruc), this.platforms);
     }
 
     act() {
-        this.platforms.forEach(p => p.act())
+        this.actors.forEach(a => a.act())
         return this
     }
 
     draw() {
-        this.platforms.forEach(p => p.draw())
+        this.actors.forEach(a => a.draw())
         return this
     }
 
     move(player) {
-        this.platforms.forEach(p => p.x -= player.direction * player.speed)
+        this.actors.forEach(a => a.x -= player.direction * player.speed)
     }
 
     get_x() {
-        let last = this.platforms[this.platforms.length - 1]
+        let last = this.actors[this.actors.length - 1]
         return last.x + last.width
     }
 
@@ -227,7 +254,7 @@ class Platform_Set extends Actor {
                         y: canvas.height - images['GF-zone'].height + 20,
                         image: images['GF-zone'] })
                     if (Math.random() < 0.4) {
-                        this.platforms.push(new Falling({
+                        this.actors.push(new Falling({
                             x: x + to_add.width / 2 - 5,
                             y: canvas.height - to_add.height - 100,
                             width: to_add.width / 2, height: 30,
@@ -241,9 +268,16 @@ class Platform_Set extends Actor {
                     break
             }
 
-            if (ch != ' ') prev_width += to_add.width
-
-            if (to_add) this.platforms.push(to_add)
+            if (to_add) {
+                this.actors.push(to_add)
+                prev_width += to_add.width
+                if (Math.random() < 0.4) {
+                    this.actors.push(new Butter({
+                        x: to_add.x + rand(10, to_add.width - Butter.WIDTH),
+                        y: to_add.y - to_add.height - rand(10, 100),
+                        image: images.butter }))
+                }
+            }
         })
 
         this.width = prev_width
