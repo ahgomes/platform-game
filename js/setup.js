@@ -19,7 +19,7 @@ async function setup_canvas() {
     canvas.style.border = `${border.width}px ${border.type} ${border.color}`
 
     press_start = await new FontFace('Press Start',
-        'url(fonts/Press_Start_2P/PressStart2P-Regular.ttf)')
+        'url(assets/fonts/Press_Start_2P/PressStart2P-Regular.ttf)')
     document.fonts.add(press_start)
 
     c.font = '1em Press Start'
@@ -38,31 +38,30 @@ function load_image(url) {
 
 async function setup_images() {
     const result = await Promise.allSettled([
-        load_image('images/background.jpg'),
-        load_image('images/bread.png'),
-        load_image('images/brick.jpg'),
-        load_image('images/pigeon1.png'),
-        load_image('images/pigeon2.png'),
-        load_image('images/pigeon3.png'),
-        load_image('images/pigeon4.png'),
-        load_image('images/pigeon5.png'),
-        load_image('images/pigeon6.png'),
-        load_image('images/pigeon-wBread1.png'),
-        load_image('images/pigeon-wBread2.png'),
-        load_image('images/pigeon-wBread3.png'),
-        load_image('images/pigeon-wBread4.png'),
-        load_image('images/pigeon-wBread5.png'),
-        load_image('images/pigeon-wBread6.png'),
-        load_image('images/GF-zone.png'),
-        load_image('images/GF-bread.png'),
-        load_image('images/butter.png'),
+        load_image('assets/images/background.jpg'),
+        load_image('assets/images/bread.png'),
+        load_image('assets/images/brick.jpg'),
+        load_image('assets/images/pigeon1.png'),
+        load_image('assets/images/pigeon2.png'),
+        load_image('assets/images/pigeon3.png'),
+        load_image('assets/images/pigeon4.png'),
+        load_image('assets/images/pigeon5.png'),
+        load_image('assets/images/pigeon6.png'),
+        load_image('assets/images/pigeon-wBread1.png'),
+        load_image('assets/images/pigeon-wBread2.png'),
+        load_image('assets/images/pigeon-wBread3.png'),
+        load_image('assets/images/pigeon-wBread4.png'),
+        load_image('assets/images/pigeon-wBread5.png'),
+        load_image('assets/images/pigeon-wBread6.png'),
+        load_image('assets/images/GF-zone.png'),
+        load_image('assets/images/GF-bread.png'),
+        load_image('assets/images/butter.png'),
     ])
 
     for (let img of result) {
-        if (!img.value) {
-            return false
-        }
+        if (!img.value) return false
 
+        // adding images to 'images' object by name of file without extension
         let src = img.value.src
         let name = src.slice(src.lastIndexOf('/') + 1, src.lastIndexOf('.'))
         images[name] = img.value

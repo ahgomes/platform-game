@@ -1,3 +1,7 @@
+/* ------------------------------------------------------------------
+    SETUP
+------------------------------------------------------------------ */
+
 let inplay = false
 let game_over = false
 let loaded = false
@@ -5,11 +9,16 @@ let loaded = false
 let actors = {}
 let player
 
+// pigeon images
+let p_imgs = [] // no bread
+let p_imgs_b = [] // w/ bread
+
 const GAP_LENGTH = 150
 const START_SPACE = 130
 const MAX_P_SETS = 10
 
 async function init() {
+    // loading canvas ans images if possible
     if (!loaded) {
         await setup_canvas()
         loaded = await setup_images()
@@ -21,7 +30,19 @@ async function init() {
             c.fillText(text, center - text_width / 2, middle)
             return
         }
+
+        // setting up pigeon image arrays
+        for (let i = 0, b = false; i < 6;) {
+            if (!b) p_imgs.push(images['pigeon' + (i + 1)])
+            else p_imgs_b.push(images['pigeon-wBread' + (i + 1)])
+
+            if (++i == 6 && !b) {
+                i = 0; b = true
+            }
+        }
     }
+
+    // -- Creating Actors --
 
     actors['bkgds'] = [
         new Background(0, {image: images.background}),
@@ -36,18 +57,6 @@ async function init() {
         width: 80, height: 40,
         image: images.bread })
     actors['player'] = player
-
-    let p_imgs = []
-    let p_imgs_b = []
-
-    for (let i = 0, b = false; i < 6;) {
-        if (!b) p_imgs.push(images['pigeon' + (i + 1)])
-        else p_imgs_b.push(images['pigeon-wBread' + (i + 1)])
-
-        if (++i == 6 && !b) {
-            i = 0; b = true
-        }
-    }
 
     actors['pigeon'] = new Pigeon({
         x: canvas.width + GAP_LENGTH,
@@ -66,12 +75,17 @@ async function init() {
         post_text: 'm', text_align: 'end'
     })
 
-
     inplay = true
     animate()
 }
 
+/* ------------------------------------------------------------------
+    RUNNING
+------------------------------------------------------------------ */
+
 function animate() {
+    // game over
+    // checking all animations done
     if (is_game_over()) {
         if (player.y - player.height > canvas.height) {
             if (player.state == Player.State.ALIVE)
@@ -87,8 +101,10 @@ function animate() {
         game_over = true
     }
 
+    // game over and all animations done
+    // display game over screen
     if (!inplay) {
-        if (game_over) {
+        if (game_over) { // adding restart instruction to game over text
             game_over_screen()
             let go_text = c.measureText('GAME OVER')
             c.font = '1em Press Start'
@@ -101,19 +117,24 @@ function animate() {
         return
     }
 
+    // clear canvas
     c.clearRect(0, 0, canvas.width, canvas.height)
 
+    // adding new Platform_Set ahead of screen
     let last_p_sets = actors.p_sets[actors.p_sets.length - 1]
     if (last_p_sets.get_x() + GAP_LENGTH < canvas.width)
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
+    // removing Platform_Set at capacity
     if (actors.p_sets.length > MAX_P_SETS)
         actors.p_sets.shift()
 
+    // moving non-player game actors
     if (player.x >= START_SPACE && player.direction != 0
             && player.can_run(player.direction) && !stop_back())
         move_game()
 
+    // reseting pigeon
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
         actors.pigeon.x = canvas.width + GAP_LENGTH
         actors.pigeon.y = GAP_LENGTH
@@ -121,11 +142,13 @@ function animate() {
         actors.pigeon.state = 1
     }
 
+    // deactiving pigeon
     if (actors.pigeon.state && actors.pigeon.x < -GAP_LENGTH) {
         actors.pigeon.state = 0
         actors.pigeon.height = 0
     }
 
+    // updating all actors
     Object.entries(actors).forEach(([_, value]) => {
         if (Array.isArray(value)) {
             value.forEach(el => el.update())
@@ -138,6 +161,7 @@ function animate() {
     if (inplay && loaded) requestAnimationFrame(animate)
 }
 
+// clear canvas and reset properties
 function restart() {
     c.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -149,14 +173,11 @@ function restart() {
     init()
 }
 
-function stop_back() {
-    if (player.direction >= 0) return false
+/* ------------------------------------------------------------------
+    ANIMATION HELPERS
+------------------------------------------------------------------ */
 
-    let [b1, b2] = actors.bkgds
-    return (b1.x >= -1 && b2.x >= canvas.width - 1) ||
-        (b2.x >= -1 && b1.x >= canvas.width - 1)
-}
-
+// move Pigeon, Background's, Platform_Set's, and update meter counter
 function move_game() {
     if (actors.pigeon) actors.pigeon.x -= player.direction * player.speed
 
@@ -172,9 +193,17 @@ function move_game() {
     actors.meter_counter.num = Math.floor(player.meters_run / 50)
 }
 
+// if trying to move backwards and background at end return true
+// otherwise false
+function stop_back() {
+    if (player.direction >= 0) return false
+
+    let [b1, b2] = actors.bkgds
+    return (b1.x >= -1 && b2.x >= canvas.width - 1) ||
+        (b2.x >= -1 && b1.x >= canvas.width - 1)
+}
+
 function game_over_screen() {
-    // c.fillStyle = 'rgba(0, 0, 0, 0.3)'
-    // c.fillRect(0, 0, canvas.width, canvas.height)
     c.font = '3em Press Start'
     c.textAlign = 'center'
     c.textBaseline = 'middle'
@@ -189,6 +218,16 @@ function is_game_over() {
     return player.y > canvas.height || player.state != Player.State.ALIVE
 }
 
+function butter_inc() {
+    player.butter_count++
+    actors.butter_counter.inc()
+}
+
+/* ------------------------------------------------------------------
+    DEATH HELPERS
+------------------------------------------------------------------ */
+
+// in Gluten_Free_Zone
 function is_zone_death(yes) {
     if (player == undefined) return false
     if (player.state == Player.State.ZONE_DEATH) return true
@@ -199,6 +238,7 @@ function is_zone_death(yes) {
     }
 }
 
+// eaten by Pigeon
 function is_bird_death(yes) {
     if (player == undefined) return false
     if (player.state == Player.State.BIRD_DEATH) return true
@@ -207,6 +247,10 @@ function is_bird_death(yes) {
         return true
     }
 }
+
+/* ------------------------------------------------------------------
+    COLLISION DETECTION
+------------------------------------------------------------------ */
 
 function is_on_platform() {
     if (actors == undefined) return false
@@ -238,10 +282,9 @@ function is_intersecting_player(actor) {
     return Actor.is_intersecting(player, actor)
 }
 
-function butter_inc() {
-    player.butter_count++
-    actors.butter_counter.inc()
-}
+/* ------------------------------------------------------------------
+    KEYBOARD ACTIONS
+------------------------------------------------------------------ */
 
 let is_key_down = {
     left: false,
@@ -265,5 +308,9 @@ window.onkeyup = function(e) {
         is_key_down[Object.keys(is_key_down)[k]] = false
     }
 }
+
+/* ------------------------------------------------------------------
+    ONLOAD
+------------------------------------------------------------------ */
 
 window.onload = init()

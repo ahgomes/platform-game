@@ -1,3 +1,7 @@
+/* ------------------------------------------------------------------
+    ACTOR CLASS
+------------------------------------------------------------------ */
+
 class Actor {
     constructor(prop = {}) {
         this.image = prop.image
@@ -27,11 +31,6 @@ class Actor {
         return this
     }
 
-    set_position(x, y) {
-        this.x = x
-        this.y = y
-    }
-
     update() {
         this.act()
             .draw()
@@ -49,93 +48,120 @@ class Actor {
     }
 }
 
-class Background extends Actor {
-    constructor(loc = -1, prop = {}) {
-        super(prop)
-        this.scale_to_fill()
-        this.x = loc * this.width
-        this.y = canvas.height - this.height
+/* ------------------------------------------------------------------
+    PLAYER
+------------------------------------------------------------------ */
+
+class Player extends Actor {
+    static State = {
+        ALIVE: 'alive',
+        BIRD_DEATH: 'eaten',
+        TOASTER_DEATH: 'burned',
+        FALLING_DEATH: 'fallen',
+        ZONE_DEATH: 'zoned'
     }
 
-    scale_to_fill() {
-        let scale = Math.max(canvas.width / this.width,
-                canvas.height / this.height)
-        this.width *= scale
-        this.height *= scale
-    }
-}
-
-class Counter extends Actor {
-    constructor(prop = {}) {
-        super(prop)
-        this.pre_text = prop.pre_text || ''
-        this._num = prop.num || 0
-        this.post_text = prop.post_text || ''
-        this.text = this.pre_text + this._num + this.post_text
-        this.text_align = prop.text_align || 'start'
-    }
-
-    // IDEA: add icons to counter
-
-    draw() {
-        c.font = '1em Press Start'
-        c.textAlign = this.text_align
-        c.textBaseline = 'top'
-        c.strokeStyle = '#fff'
-        c.lineWidth = 1
-        c.fillStyle = '#000'
-        c.strokeText(this.text, this.x, this.y)
-        c.fillText(this.text, this.x, this.y)
-        return this
-    }
-
-    get num() {
-        return this._num
-    }
-
-    set num(n) {
-        this._num = n
-        this.text = this.pre_text + this._num + this.post_text
-    }
-
-    inc() {
-        this._num++
-        this.text = this.pre_text + this._num + this.post_text
-    }
-
-    dec() {
-        this._num--
-        this.text = this.pre_text + this._num + this.post_text
-    }
-}
-
-class Butter extends Actor {
-    static WIDTH = 65
-    static HEIGHT = 26
+    static GRAVITY = 1
 
     constructor(prop = {}) {
         super(prop)
-        this.width = Butter.WIDTH
-        this.height = Butter.HEIGHT
-        this.is_collected = false
+        this.direction = 0
+        this.fall_direction = 0
+        this.speed = 4
+        this.jump_strength = 0
+        this.can_jump = true
+        this.is_jumping = false
+        this.jump_count = 0
+        this.meters_run = 0
+        this.butter_count = 0
+        this.state = Player.State.ALIVE
     }
 
     act() {
-        if (is_intersecting_player(this) && !this.is_collected) {
-            this.is_collected = true
-            butter_inc()
+        switch (this.state) {
+            case Player.State.BIRD_DEATH:
+                this.width = 0
+                break
+            case Player.State.TOASTER_DEATH:
+                this.image = images['burnt-bread']
+                break
+            case Player.State.FALLING_DEATH:
+                this.y += this.height
+                break
+            case Player.State.ZONE_DEATH:
+                this.image = images['GF-bread']
+                this.rotation += this.fall_direction * 0.25
+                this.y += 2
+                break
         }
 
-        if (this.is_collected && this.width > 0) {
-            this.width -= 10
-            this.height -= 10
-            this.x += 5
-            this.y += 5
+        if (this.state != Player.State.ALIVE) {
+            this.direction = 0
+            this.jump_strength = 0
+            return this
         }
 
-        if (this.width < 0) this.width = 0
+        if (is_key_down.up && this.can_jump && this.jump_count < 2) {
+            this.jump_strength = -15
+            this.can_jump = false
+            this.is_jumping = true
+            this.jump_count++
+            this.y += this.jump_strength
+        }
+
+        if (this.is_jumping) {
+            this.rotation = (this.jump_strength) ? this.jump_strength * 2 : 0.1
+        }
+
+        this.fall()
+
+        if (!is_key_down.up) this.can_jump = true
+        if (is_key_down.left && this.can_run(-1) && this.x > 0) {
+            this.direction = -1
+            if (this.x < START_SPACE || stop_back()) this.run()
+            this.meters_run--
+            this.rotation = -this.jump_strength * 1
+        }
+        if (is_key_down.right && this.can_run(1)) {
+            this.direction = 1
+            if (this.x < START_SPACE || stop_back()) this.run()
+            this.meters_run++
+        }
+
+        if (!is_key_down.left && !is_key_down.right)
+            this.direction = 0
+
+        return this
+    }
+
+    can_run(dir) {
+        return get_platform_at_offset(this.speed * this.direction - 1, 0) == null
+    }
+
+    fall() {
+        //console.log(this.rotation, this.jump_strength);
+        if (is_on_platform()) {
+            let ground = get_platform_at_offset(0, 1)
+            if (ground != null)
+                this.y = ground.y - this.height
+            this.jump_strength = 0
+            this.jump_count = 0
+            this.rotation = 0
+            this.is_jumping = false
+        } else {
+            this.jump_strength += Player.GRAVITY
+        }
+        this.y += this.jump_strength
+    }
+
+    run() {
+        this.x += this.direction * this.speed
     }
 }
+
+/* ------------------------------------------------------------------
+    ENEMIES
+------------------------------------------------------------------ */
 
 class Pigeon extends Actor {
     constructor(prop = {}) {
@@ -181,6 +207,68 @@ class Pigeon extends Actor {
         this.y += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
     }
 }
+
+class Toaster extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+    }
+}
+
+class Fire extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+    }
+}
+
+/* ------------------------------------------------------------------
+    COLLECTABLES
+------------------------------------------------------------------ */
+
+class Butter extends Actor {
+    static WIDTH = 65
+    static HEIGHT = 26
+
+    constructor(prop = {}) {
+        super(prop)
+        this.width = Butter.WIDTH
+        this.height = Butter.HEIGHT
+        this.is_collected = false
+        this.float_up = true
+        this.float_dist = 0
+    }
+
+    act() {
+        if (is_intersecting_player(this) && !this.is_collected) {
+            this.is_collected = true
+            butter_inc()
+        }
+
+        if (this.is_collected && this.width > 0) {
+            this.width -= 10
+            this.height -= 10
+            this.x += 5
+            this.y += 5
+        }
+
+        if (this.width < 0) {
+            this.width = 0
+            return this
+        }
+
+        if (this.float_up && this.float_dist++ >= 10)
+            this.float_up = false
+        else if (!this.float_up && this.float_dist-- <= 0)
+            this.float_up = true
+
+        this.y += (this.float_up) ? -0.1 : 0.1
+
+        return this
+    }
+}
+
+/* ------------------------------------------------------------------
+    PLATFORMS AND PLATFORM_SET ACTORS
+------------------------------------------------------------------ */
 
 class Platform extends Actor {
     constructor(prop = {}) {
@@ -244,7 +332,7 @@ class Platform_Set extends Actor {
         this.x -= player.direction * player.speed
     }
 
-    get_x() {
+    get_x() { // get x value of last point of Platform_Set
         let last
         for (let i = this.actors.length - 1; i >= 0; i--) {
             last = this.actors[i]
@@ -351,111 +439,66 @@ class Platform_Set extends Actor {
     }
 }
 
-// TODO: stop back run after passed screen
+/* ------------------------------------------------------------------
+    BACKGROUND ACTORS
+------------------------------------------------------------------ */
 
-class Player extends Actor {
-    static State = {
-        ALIVE: 'alive',
-        BIRD_DEATH: 'eaten',
-        TOASTER_DEATH: 'burned',
-        FALLING_DEATH: 'fallen',
-        ZONE_DEATH: 'zoned'
+class Background extends Actor {
+    constructor(loc = -1, prop = {}) {
+        super(prop)
+        this.scale_to_fill()
+        this.x = loc * this.width
+        this.y = canvas.height - this.height
     }
 
-    static GRAVITY = 1
+    scale_to_fill() {
+        let scale = Math.max(canvas.width / this.width,
+                canvas.height / this.height)
+        this.width *= scale
+        this.height *= scale
+    }
+}
 
+class Counter extends Actor {
     constructor(prop = {}) {
         super(prop)
-        this.direction = 0
-        this.fall_direction = 0
-        this.speed = 4
-        this.jump_strength = 0
-        this.can_jump = true
-        this.is_jumping = false
-        this.jump_count = 0
-        this.meters_run = 0
-        this.butter_count = 0
-        this.state = Player.State.ALIVE
+        this.pre_text = prop.pre_text || ''
+        this._num = prop.num || 0
+        this.post_text = prop.post_text || ''
+        this.text = this.pre_text + this._num + this.post_text
+        this.text_align = prop.text_align || 'start'
     }
 
-    act() {
-        switch (this.state) {
-            case Player.State.BIRD_DEATH:
-                this.width = 0
-                break
-            case Player.State.TOASTER_DEATH:
-                this.image = images['burnt-bread']
-                break
-            case Player.State.FALLING_DEATH:
-                this.y += this.height
-                break
-            case Player.State.ZONE_DEATH:
-                this.image = images['GF-bread']
-                this.rotation += this.fall_direction * 0.25
-                this.y += 2
-                break
-        }
+    // IDEA: add icons to counter
 
-        if (this.state != Player.State.ALIVE) {
-            this.direction = 0
-            this.jump_strength = 0
-            return this
-        }
-
-        if (is_key_down.up && this.can_jump && this.jump_count < 2) {
-            this.jump_strength = -15
-            this.can_jump = false
-            this.is_jumping = true
-            this.jump_count++
-            this.y += this.jump_strength
-        }
-
-        if (this.is_jumping) {
-            this.rotation = (this.jump_strength) ? this.jump_strength * 2 : 0.1
-        }
-
-        this.fall()
-
-        if (!is_key_down.up) this.can_jump = true
-        if (is_key_down.left && this.can_run(-1) && this.x > 0) {
-            this.direction = -1
-            if (this.x < START_SPACE || stop_back()) this.run()
-            this.meters_run--
-            this.rotation = -this.jump_strength * 1
-        }
-        if (is_key_down.right && this.can_run(1)) {
-            this.direction = 1
-            if (this.x < START_SPACE || stop_back()) this.run()
-            this.meters_run++
-        }
-
-        if (!is_key_down.left && !is_key_down.right)
-            this.direction = 0
-
+    draw() {
+        c.font = '1em Press Start'
+        c.textAlign = this.text_align
+        c.textBaseline = 'top'
+        c.strokeStyle = '#fff'
+        c.lineWidth = 1
+        c.fillStyle = '#000'
+        c.strokeText(this.text, this.x, this.y)
+        c.fillText(this.text, this.x, this.y)
         return this
     }
 
-    can_run(dir) {
-        return get_platform_at_offset(this.speed * this.direction - 1, 0) == null
+    get num() {
+        return this._num
     }
 
-    fall() {
-        //console.log(this.rotation, this.jump_strength);
-        if (is_on_platform()) {
-            let ground = get_platform_at_offset(0, 1)
-            if (ground != null)
-                this.y = ground.y - this.height
-            this.jump_strength = 0
-            this.jump_count = 0
-            this.rotation = 0
-            this.is_jumping = false
-        } else {
-            this.jump_strength += Player.GRAVITY
-        }
-        this.y += this.jump_strength
+    set num(n) {
+        this._num = n
+        this.text = this.pre_text + this._num + this.post_text
     }
 
-    run() {
-        this.x += this.direction * this.speed
+    inc() {
+        this._num++
+        this.text = this.pre_text + this._num + this.post_text
+    }
+
+    dec() {
+        this._num--
+        this.text = this.pre_text + this._num + this.post_text
     }
 }
