@@ -2,8 +2,9 @@ const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
 let center, middle
+let press_start
 
-function setup_canvas() {
+async function setup_canvas() {
     const margin = 50
     const border = {width: 50, type: "solid", color: "#2d2d2d"}
 
@@ -16,7 +17,11 @@ function setup_canvas() {
     canvas.style.margin = `${margin}px auto`
     canvas.style.border = `${border.width}px ${border.type} ${border.color}`
 
-    c.font = '1em Courier New'
+    press_start = await new FontFace('Press Start',
+        'url(fonts/Press_Start_2P/PressStart2P-Regular.ttf)')
+    document.fonts.add(press_start)
+
+    c.font = '1em Press Start'
     c.fillStyle = '#000'
     c.fillRect(0, 0, canvas.width, canvas.height)
 }

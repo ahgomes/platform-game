@@ -12,7 +12,6 @@ const START_SPACE = 30
 async function init() {
     await setup_canvas()
 
-
     const result = await Promise.allSettled([
         //load_image(canvas.toDataURL()),
         load_image('images/background.jpg'),
@@ -32,24 +31,25 @@ async function init() {
         load_image('images/pigeon-wBread6.png'),
         load_image('images/GF-zone.png'),
         load_image('images/GF-bread.png'),
-        load_image('images/butter.png')
+        load_image('images/butter.png'),
     ])
 
-    result.forEach((img) => {
+    for (let img of result) {
         if (!img.value) {
             c.clearRect(0, 0, canvas.width, canvas.height)
             c.fillStyle = '#fff'
             let text = 'Error: Missing images.'
             let text_width = c.measureText(text).width
             c.fillText(text, center - text_width / 2, middle)
-            return loaded = false
+            loaded = false
+            break
         }
 
         let src = img.value.src
         let name = src.slice(src.lastIndexOf('/') + 1, src.lastIndexOf('.'))
         images[name] = img.value
         loaded = true
-    });
+    }
 
     if (!loaded) return
 
@@ -88,12 +88,12 @@ async function init() {
     })
 
     actors['butter_counter'] = new Counter({
-        x: 10, y: 20,
-        pre_text: 'Butter: '
+        x: 10, y: 10,
+        pre_text: 'BUTTER: '
     })
 
     actors['meter_counter'] = new Counter({
-        x: canvas.width - 10, y: 20,
+        x: canvas.width - 10, y: 10,
         post_text: 'm', text_align: 'end'
     })
 
@@ -118,8 +118,6 @@ function animate() {
         }
 
         game_over = true
-
-        // TODO: Game over text
     }
 
     if (!inplay) return
@@ -130,7 +128,7 @@ function animate() {
     if (last_p_sets.get_x() + GAP_LENGTH < canvas.width)
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
-    if (player.cm_run >= START_SPACE && player.direction != 0
+    if (player.meters_run >= START_SPACE && player.direction != 0
             && player.can_run(player.direction))
         move_game()
 
@@ -154,6 +152,7 @@ function animate() {
         value.update()
     })
 
+    if (game_over) game_over_screen()
     if (inplay && loaded) requestAnimationFrame(animate)
 }
 
@@ -169,7 +168,20 @@ function move_game() {
 
     actors.p_sets.forEach(p => p.move(player))
 
-    actors.meter_counter.num = Math.ceil(player.cm_run / 100)
+    actors.meter_counter.num = Math.ceil(player.meters_run / 50)
+}
+
+function game_over_screen() {
+    c.fillStyle = 'rgba(0, 0, 0, 0.3)'
+    c.fillRect(0, 0, canvas.width, canvas.height)
+    c.font = '3em Press Start'
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.lineWidth = 4
+    c.strokeStyle = '#fff'
+    c.strokeText('GAME OVER', center, middle)
+    c.fillStyle = '#000'
+    c.fillText('GAME OVER', center, middle)
 }
 
 function is_game_over() {

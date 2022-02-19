@@ -78,9 +78,14 @@ class Counter extends Actor {
     // IDEA: add icons to counter
 
     draw() {
+        c.font = '1em Press Start'
         c.textAlign = this.text_align
+        c.textBaseline = 'top'
+        c.strokeStyle = '#fff'
+        c.lineWidth = 1
+        c.fillStyle = '#000'
+        c.strokeText(this.text, this.x, this.y)
         c.fillText(this.text, this.x, this.y)
-        c.textAlign = 'start'
         return this
     }
 
@@ -365,7 +370,7 @@ class Player extends Actor {
         this.can_jump = true
         this.is_jumping = false
         this.jump_count = 0
-        this.cm_run = 0
+        this.meters_run = 0
         this.butter_count = 0
         this.state = Player.State.ALIVE
     }
@@ -409,16 +414,16 @@ class Player extends Actor {
         this.fall()
 
         if (!is_key_down.up) this.can_jump = true
-        if (is_key_down.left && this.can_run(-1) && this.cm_run > 0) {
+        if (is_key_down.left && this.can_run(-1) && this.meters_run > 0) {
             this.direction = -1
-            if (this.cm_run < START_SPACE) this.run()
-            this.cm_run--
+            if (this.meters_run < START_SPACE) this.run()
+            this.meters_run--
             this.rotation = -this.jump_strength * 1
         }
         if (is_key_down.right && this.can_run(1)) {
             this.direction = 1
-            if (this.cm_run < START_SPACE) this.run()
-            this.cm_run++
+            if (this.meters_run < START_SPACE) this.run()
+            this.meters_run++
         }
 
         if (!is_key_down.left && !is_key_down.right)
