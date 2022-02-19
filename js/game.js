@@ -59,7 +59,7 @@ async function init() {
         new Background(1, {image: images.background}) ]
 
     actors['p_sets'] = [
-        new Platform_Set({instruc: 'ssbs s'})]
+        new Platform_Set({instruc: 'ssbs s', butter_pattern: [0, 0, 1]})]
 
     player = new Player({
         x: 100,
@@ -85,6 +85,16 @@ async function init() {
         y: GAP_LENGTH,
         images: p_imgs,
         images_b: p_imgs_b,
+    })
+
+    actors['butter_counter'] = new Counter({
+        x: 10, y: 20,
+        pre_text: 'Butter: '
+    })
+
+    actors['meter_counter'] = new Counter({
+        x: canvas.width - 10, y: 20,
+        post_text: 'm', text_align: 'end'
     })
 
 
@@ -120,18 +130,21 @@ function animate() {
     if (last_p_sets.get_x() + GAP_LENGTH < canvas.width)
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
-    if (player.meters_run >= START_SPACE && player.direction != 0
+    if (player.cm_run >= START_SPACE && player.direction != 0
             && player.can_run(player.direction))
         move_game()
 
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
         actors.pigeon.x = canvas.width + GAP_LENGTH
         actors.pigeon.y = GAP_LENGTH
+        actors.pigeon.height = 114
         actors.pigeon.state = 1
     }
 
-    if (actors.pigeon.state && actors.pigeon.x < -GAP_LENGTH)
+    if (actors.pigeon.state && actors.pigeon.x < -GAP_LENGTH) {
         actors.pigeon.state = 0
+        actors.pigeon.height = 0
+    }
 
     Object.entries(actors).forEach(([_, value]) => {
         if (Array.isArray(value)) {
@@ -155,6 +168,8 @@ function move_game() {
     })
 
     actors.p_sets.forEach(p => p.move(player))
+
+    actors.meter_counter.num = Math.ceil(player.cm_run / 100)
 }
 
 function is_game_over() {
@@ -212,7 +227,7 @@ function is_intersecting_player(actor) {
 
 function butter_inc() {
     player.butter_count++
-    console.log(player.butter_count)
+    actors.butter_counter.inc()
 }
 
 let is_key_down = {

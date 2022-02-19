@@ -49,6 +49,61 @@ class Actor {
     }
 }
 
+class Background extends Actor {
+    constructor(loc = -1, prop = {}) {
+        super(prop)
+        this.scale_to_fill()
+        this.x = loc * this.width
+        this.y = canvas.height - this.height
+    }
+
+    scale_to_fill() {
+        let scale = Math.max(canvas.width / this.width,
+                canvas.height / this.height)
+        this.width *= scale
+        this.height *= scale
+    }
+}
+
+class Counter extends Actor {
+    constructor(prop = {}) {
+        super(prop)
+        this.pre_text = prop.pre_text || ''
+        this._num = prop.num || 0
+        this.post_text = prop.post_text || ''
+        this.text = this.pre_text + this._num + this.post_text
+        this.text_align = prop.text_align || 'start'
+    }
+
+    // IDEA: add icons to counter
+
+    draw() {
+        c.textAlign = this.text_align
+        c.fillText(this.text, this.x, this.y)
+        c.textAlign = 'start'
+        return this
+    }
+
+    get num() {
+        return this._num
+    }
+
+    set num(n) {
+        this._num = n
+        this.text = this.pre_text + this._num + this.post_text
+    }
+
+    inc() {
+        this._num++
+        this.text = this.pre_text + this._num + this.post_text
+    }
+
+    dec() {
+        this._num--
+        this.text = this.pre_text + this._num + this.post_text
+    }
+}
+
 class Butter extends Actor {
     static WIDTH = 65
     static HEIGHT = 26
@@ -74,22 +129,6 @@ class Butter extends Actor {
         }
 
         if (this.width < 0) this.width = 0
-    }
-}
-
-class Background extends Actor {
-    constructor(loc = -1, prop = {}) {
-        super(prop)
-        this.scale_to_fill()
-        this.x = loc * this.width
-        this.y = canvas.height - this.height
-    }
-
-    scale_to_fill() {
-        let scale = Math.max(canvas.width / this.width,
-                canvas.height / this.height)
-        this.width *= scale
-        this.height *= scale
     }
 }
 
@@ -180,6 +219,8 @@ class Platform_Set extends Actor {
     constructor(prop = {}) {
         super(prop)
         this.actors = []
+        this.butter_pattern = prop.butter_pattern
+        this.buttered = (this.butter_pattern) ? true : false
         this.instruc = prop.instruc || Platform_Set.rand_platform_string()
         this.create_platform_group(prop.start_x || 0)
     }
@@ -268,15 +309,18 @@ class Platform_Set extends Actor {
                     break
             }
 
-            if (to_add) {
-                this.actors.push(to_add)
-                prev_width += to_add.width
-                if (Math.random() < 0.4) {
-                    this.actors.push(new Butter({
-                        x: to_add.x + rand(10, to_add.width - Butter.WIDTH),
-                        y: to_add.y - to_add.height - rand(10, 100),
-                        image: images.butter }))
-                }
+            if (!to_add) return
+
+            this.actors.push(to_add)
+            prev_width += to_add.width
+            if ((this.buttered && i < this.butter_pattern.length
+                    && this.butter_pattern[i])
+                    || (!this.buttered && Math.random() < 0.5)) {
+
+                this.actors.push(new Butter({
+                    x: to_add.x + rand(10, to_add.width - Butter.WIDTH),
+                    y: to_add.y - to_add.height - rand(10, 100),
+                    image: images.butter }))
             }
         })
 
@@ -299,6 +343,8 @@ class Platform_Set extends Actor {
     }
 }
 
+// TODO: stop back run after passed screen
+
 class Player extends Actor {
     static State = {
         ALIVE: 'alive',
@@ -319,7 +365,7 @@ class Player extends Actor {
         this.can_jump = true
         this.is_jumping = false
         this.jump_count = 0
-        this.meters_run = 0
+        this.cm_run = 0
         this.butter_count = 0
         this.state = Player.State.ALIVE
     }
@@ -363,16 +409,16 @@ class Player extends Actor {
         this.fall()
 
         if (!is_key_down.up) this.can_jump = true
-        if (is_key_down.left && this.can_run(-1) && this.meters_run > 0) {
+        if (is_key_down.left && this.can_run(-1) && this.cm_run > 0) {
             this.direction = -1
-            if (this.meters_run < START_SPACE) this.run()
-            this.meters_run--
+            if (this.cm_run < START_SPACE) this.run()
+            this.cm_run--
             this.rotation = -this.jump_strength * 1
         }
         if (is_key_down.right && this.can_run(1)) {
             this.direction = 1
-            if (this.meters_run < START_SPACE) this.run()
-            this.meters_run++
+            if (this.cm_run < START_SPACE) this.run()
+            this.cm_run++
         }
 
         if (!is_key_down.left && !is_key_down.right)
