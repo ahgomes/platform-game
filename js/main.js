@@ -3,6 +3,7 @@ const c = canvas.getContext('2d')
 
 let center, middle
 let press_start
+let images = {}
 
 async function setup_canvas() {
     const margin = 50
@@ -33,6 +34,41 @@ function load_image(url) {
         img.onerror = reject
         img.src = url
     })
+}
+
+async function setup_images() {
+    const result = await Promise.allSettled([
+        load_image('images/background.jpg'),
+        load_image('images/bread.png'),
+        load_image('images/brick.jpg'),
+        load_image('images/pigeon1.png'),
+        load_image('images/pigeon2.png'),
+        load_image('images/pigeon3.png'),
+        load_image('images/pigeon4.png'),
+        load_image('images/pigeon5.png'),
+        load_image('images/pigeon6.png'),
+        load_image('images/pigeon-wBread1.png'),
+        load_image('images/pigeon-wBread2.png'),
+        load_image('images/pigeon-wBread3.png'),
+        load_image('images/pigeon-wBread4.png'),
+        load_image('images/pigeon-wBread5.png'),
+        load_image('images/pigeon-wBread6.png'),
+        load_image('images/GF-zone.png'),
+        load_image('images/GF-bread.png'),
+        load_image('images/butter.png'),
+    ])
+
+    for (let img of result) {
+        if (!img.value) {
+            return false
+        }
+
+        let src = img.value.src
+        let name = src.slice(src.lastIndexOf('/') + 1, src.lastIndexOf('.'))
+        images[name] = img.value
+    }
+
+    return true
 }
 
 function rand(min, max) {

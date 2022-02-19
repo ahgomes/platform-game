@@ -2,7 +2,6 @@ let inplay = false
 let game_over = false
 let loaded = false
 
-let images = {}
 let actors = {}
 let player
 
@@ -10,50 +9,19 @@ const GAP_LENGTH = 150
 const START_SPACE = 30
 
 async function init() {
-    await setup_canvas()
-
-    const result = await Promise.allSettled([
-        //load_image(canvas.toDataURL()),
-        load_image('images/background.jpg'),
-        load_image('images/bread.png'),
-        load_image('images/brick.jpg'),
-        load_image('images/pigeon1.png'),
-        load_image('images/pigeon2.png'),
-        load_image('images/pigeon3.png'),
-        load_image('images/pigeon4.png'),
-        load_image('images/pigeon5.png'),
-        load_image('images/pigeon6.png'),
-        load_image('images/pigeon-wBread1.png'),
-        load_image('images/pigeon-wBread2.png'),
-        load_image('images/pigeon-wBread3.png'),
-        load_image('images/pigeon-wBread4.png'),
-        load_image('images/pigeon-wBread5.png'),
-        load_image('images/pigeon-wBread6.png'),
-        load_image('images/GF-zone.png'),
-        load_image('images/GF-bread.png'),
-        load_image('images/butter.png'),
-    ])
-
-    for (let img of result) {
-        if (!img.value) {
+    if (!loaded) {
+        await setup_canvas()
+        loaded = await setup_images()
+        if (!loaded) {
             c.clearRect(0, 0, canvas.width, canvas.height)
             c.fillStyle = '#fff'
             let text = 'Error: Missing images.'
             let text_width = c.measureText(text).width
             c.fillText(text, center - text_width / 2, middle)
-            loaded = false
-            break
+            return
         }
-
-        let src = img.value.src
-        let name = src.slice(src.lastIndexOf('/') + 1, src.lastIndexOf('.'))
-        images[name] = img.value
-        loaded = true
     }
 
-    if (!loaded) return
-
-    // TODO: initiate actors for game play
     actors['bkgds'] = [
         new Background(0, {image: images.background}),
         new Background(1, {image: images.background}) ]
@@ -120,7 +88,19 @@ function animate() {
         game_over = true
     }
 
-    if (!inplay) return
+    if (!inplay) {
+        if (game_over) {
+            game_over_screen()
+            let go_text = c.measureText('GAME OVER')
+            c.font = '1em Press Start'
+            c.lineWidth = 2
+            c.strokeText('[PRESS SPACE TO RESTART]', center,
+                middle + go_text.actualBoundingBoxDescent + 50)
+            c.fillText('[PRESS SPACE TO RESTART]', center,
+                middle + go_text.actualBoundingBoxDescent + 50)
+        }
+        return
+    }
 
     c.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -156,6 +136,17 @@ function animate() {
     if (inplay && loaded) requestAnimationFrame(animate)
 }
 
+function restart() {
+    c.clearRect(0, 0, canvas.width, canvas.height)
+
+    inplay = false
+    game_over = false
+    actors = {}
+    player = undefined
+
+    init()
+}
+
 function move_game() {
     if (actors.pigeon) actors.pigeon.x -= player.direction * player.speed
 
@@ -172,8 +163,8 @@ function move_game() {
 }
 
 function game_over_screen() {
-    c.fillStyle = 'rgba(0, 0, 0, 0.3)'
-    c.fillRect(0, 0, canvas.width, canvas.height)
+    // c.fillStyle = 'rgba(0, 0, 0, 0.3)'
+    // c.fillRect(0, 0, canvas.width, canvas.height)
     c.font = '3em Press Start'
     c.textAlign = 'center'
     c.textBaseline = 'middle'
@@ -251,9 +242,11 @@ let is_key_down = {
 
 window.onkeydown = function(e) {
     let k = e.keyCode - 37
-    if (k >= 0 && k < 4) {
+    if (k >= 0 && k < 4)
         is_key_down[Object.keys(is_key_down)[k]] = true
-    }
+
+    if (game_over && !inplay && e.keyCode == 32)
+        restart()
 }
 
 window.onkeyup = function(e) {
