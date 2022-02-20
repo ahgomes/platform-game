@@ -137,7 +137,7 @@ function animate() {
     // reseting pigeon
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
         actors.pigeon.x = canvas.width + GAP_LENGTH
-        actors.pigeon.top = GAP_LENGTH
+        actors.pigeon.y = GAP_LENGTH
         actors.pigeon.height = 114
         actors.pigeon.state = 1
     }
@@ -252,11 +252,11 @@ function is_bird_death(yes) {
     COLLISION DETECTION
 ------------------------------------------------------------------ */
 
-function is_on_platform() {
+function is_on_platform(actor) {
     if (actors == undefined) return false
     for (let set of actors.p_sets) {
         for (let platform of set.actors) {
-            if (Actor.is_intersecting(player, platform)
+            if (Actor.is_intersecting(actor, platform)
                     && platform instanceof Platform)
                 return true
         }
@@ -265,11 +265,11 @@ function is_on_platform() {
     return false
 }
 
-function get_platform_at_offset(x, y) {
+function get_platform_at_offset(actor, x, y) {
     if (actors == undefined) return null
     for (let set of actors.p_sets) {
         for (let platform of set.actors) {
-            if (Actor.is_intersecting_offset(player, platform, x, y)
+            if (Actor.is_intersecting_offset(actor, platform, x, y)
                     && platform instanceof Platform)
                 return platform
         }

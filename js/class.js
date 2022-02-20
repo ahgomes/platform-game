@@ -145,12 +145,12 @@ class Player extends Actor {
     }
 
     can_run() {
-        return get_platform_at_offset(this.speed*this.direction + 1, 0) == null
+        return get_platform_at_offset(this, this.speed*this.direction + 1, 0) == null
     }
 
     fall() {
-        if (is_on_platform()) {
-            let ground = get_platform_at_offset(0, 1)
+        if (is_on_platform(this)) {
+            let ground = get_platform_at_offset(this, 0, 1)
             if (ground != null)
                 this.y = ground.y - this.height
             this.jump_strength = 0
@@ -175,7 +175,6 @@ class Player extends Actor {
 class Enemy extends Actor {
     constructor(prop = {}) {
         super(prop)
-        this.top = this.y
         this.image_set = prop.image_set
         this.image_index = 0
         this.has_hit_player = false
@@ -189,8 +188,6 @@ class Enemy extends Actor {
 
         this.width = this.image.width
         this.height = this.image.height
-
-        this.y = this.top - this.height / 2
 
         if (this.image_index >= this.image_set.length * this.flap_rate)
             this.image_index = 0
@@ -227,7 +224,9 @@ class Pigeon extends Enemy {
 
     fly() {
         this.x -= 5
-        this.top += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
+        this.y += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
+        if (get_platform_at_offset(this, 0, this.height / 2) != null)
+            this.y -= 2
     }
 }
 
