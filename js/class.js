@@ -21,10 +21,10 @@ class Actor {
 
         if (this.rotation) {
             c.save()
-            c.translate(this.x + this.width / 2, this.y + this.height / 2)
+            c.translate(this.x, this.y)
             c.rotate(degs_to_rads(this.rotation * 2))
             c.drawImage(this.image, 0, 0, this.width, this.height)
-            c.translate(-(this.x + this.width / 2), -(this.y + this.height / 2))
+            c.translate(-this.x, -this.y)
             c.restore()
         } else c.drawImage(this.image, this.x, this.y, this.width, this.height)
 
@@ -34,6 +34,14 @@ class Actor {
     update() {
         this.act()
             .draw()
+        c.strokeStyle = '#f00'
+        c.lineWidth = 1
+        c.strokeRect(this.x, this.y, this.width, this.height)
+        if (this instanceof Platform_Set) {
+            this.actors.forEach((p) => {
+                c.strokeRect(p.x, p.y, p.width, p.height)
+            })
+        }
     }
 
     static is_intersecting(a, b) {
@@ -238,6 +246,7 @@ class Butter extends Actor {
     }
 
     act() {
+        //console.log(Math.sqrt((player.height**2) + (player.width**2))/2);
         if (is_intersecting_player(this) && !this.is_collected) {
             this.is_collected = true
             butter_inc()

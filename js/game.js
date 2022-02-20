@@ -279,7 +279,13 @@ function get_platform_at_offset(x, y) {
 }
 
 function is_intersecting_player(actor) {
-    return Actor.is_intersecting(player, actor)
+    //if (player.rotation <= 0.1 && player.rotation >= -0.1)
+        return Actor.is_intersecting(player, actor)
+    //return Actor.is_intersecting_offset(player, actor, 44, 0)
+}
+
+function is_player_at_offset(actor, x, y) {
+    return Actor.is_intersecting_offset(player, actor, x, y)
 }
 
 /* ------------------------------------------------------------------
