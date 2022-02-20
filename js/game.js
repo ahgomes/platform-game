@@ -13,6 +13,13 @@ let player
 let p_imgs = [] // no bread
 let p_imgs_b = [] // w/ bread
 
+// toaster images
+let t_imgs = [] // peaceful
+let t_imgs_b = [] // !peaceful
+
+// fire images
+let f_imgs = []
+
 const GAP_LENGTH = 150
 const START_SPACE = 130
 const MAX_P_SETS = 10
@@ -31,14 +38,15 @@ async function init() {
             return
         }
 
-        // setting up pigeon image arrays
-        for (let i = 0, b = false; i < 6;) {
-            if (!b) p_imgs.push(images['pigeon' + (i + 1)])
-            else p_imgs_b.push(images['pigeon-wBread' + (i + 1)])
-
-            if (++i == 6 && !b) {
-                i = 0; b = true
+        // setting up enemy image arrays
+        for (let i = 0; i < 8; i++) {
+            if (i < 5) t_imgs_b.push(images['toasterAttack' + (i + 1)])
+            if (i < 6) {
+                p_imgs.push(images['pigeon' + (i + 1)])
+                p_imgs_b.push(images['pigeon-wBread' + (i + 1)])
+                t_imgs.push(images['toasterWalk' + (i + 1)])
             }
+            f_imgs.push(images['fire' + (i + 1)])
         }
     }
 
@@ -224,26 +232,16 @@ function butter_inc() {
 }
 
 /* ------------------------------------------------------------------
-    DEATH HELPERS
+    DEATH HELPER
 ------------------------------------------------------------------ */
 
-// in Gluten_Free_Zone
-function is_zone_death(yes) {
+function is_death(type, yes) {
     if (player == undefined) return false
-    if (player.state == Player.State.ZONE_DEATH) return true
+    if (player.state == type) return true
     if (yes) {
-        player.state = Player.State.ZONE_DEATH
-        player.fall_direction = player.direction
-        return true
-    }
-}
-
-// eaten by Pigeon
-function is_bird_death(yes) {
-    if (player == undefined) return false
-    if (player.state == Player.State.BIRD_DEATH) return true
-    if (yes) {
-        player.state = Player.State.BIRD_DEATH
+        player.state = type
+        if (type = Player.State.ZONE_DEATH)
+            player.fall_direction = player.direction
         return true
     }
 }
@@ -279,9 +277,7 @@ function get_platform_at_offset(actor, x, y) {
 }
 
 function is_intersecting_player(actor) {
-    //if (player.rotation <= 0.1 && player.rotation >= -0.1)
-        return Actor.is_intersecting(player, actor)
-    //return Actor.is_intersecting_offset(player, actor, 44, 0)
+    return Actor.is_intersecting(player, actor)
 }
 
 function is_player_at_offset(actor, x, y) {

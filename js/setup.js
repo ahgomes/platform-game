@@ -37,26 +37,21 @@ function load_image(url) {
 }
 
 async function setup_images() {
-    const result = await Promise.allSettled([
-        load_image('assets/images/background.jpg'),
-        load_image('assets/images/bread.png'),
-        load_image('assets/images/brick.jpg'),
-        load_image('assets/images/pigeon1.png'),
-        load_image('assets/images/pigeon2.png'),
-        load_image('assets/images/pigeon3.png'),
-        load_image('assets/images/pigeon4.png'),
-        load_image('assets/images/pigeon5.png'),
-        load_image('assets/images/pigeon6.png'),
-        load_image('assets/images/pigeon-wBread1.png'),
-        load_image('assets/images/pigeon-wBread2.png'),
-        load_image('assets/images/pigeon-wBread3.png'),
-        load_image('assets/images/pigeon-wBread4.png'),
-        load_image('assets/images/pigeon-wBread5.png'),
-        load_image('assets/images/pigeon-wBread6.png'),
-        load_image('assets/images/GF-zone.png'),
-        load_image('assets/images/GF-bread.png'),
-        load_image('assets/images/butter.png'),
-    ])
+    const urls = ['background.jpg', 'bread.png', 'brick.jpg', 'burnt-bread.png',
+        'butter.png', 'GF-bread.png', 'GF-zone.png']
+    for (let i = 0; i < 8; i++) {
+        if (i < 5) urls.push(`toasterAttack${i + 1}.png`)
+        if (i < 6) {
+            urls.push(`pigeon${i + 1}.png`)
+            urls.push(`pigeon-wBread${i + 1}.png`)
+            urls.push(`toasterWalk${i + 1}.png`)
+        }
+        urls.push(`fire${i + 1}.png`)
+    }
+
+    const result = await Promise.allSettled(urls.map(async url => {
+        return await load_image('assets/images/' + url)
+    }))
 
     for (let img of result) {
         if (!img.value) return false

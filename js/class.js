@@ -216,7 +216,7 @@ class Pigeon extends Enemy {
         if (is_intersecting_player(this)) {
             this.has_hit_player = true
             this.image_set = this.image_set_b
-            is_bird_death(true)
+            is_death(Player.State.BIRD_DEATH, true)
         }
 
         return this
@@ -233,6 +233,31 @@ class Pigeon extends Enemy {
 class Toaster extends Actor {
     constructor(prop = {}) {
         super(prop)
+        this.image_set_b = prop.image_set_b
+        this.peaceful = true
+        this.can_fire = false
+    }
+
+    act() {
+        if (this.peaceful && is_player_at_offset(this, 80, 10)) {
+            this.peaceful = false
+            this.can_fire = true
+            this.image_set = this.image_set_b
+            this.image_index = 0
+        }
+
+        if (!this.peaceful && this.image_index >= this.image_set.length * this.flap_rate) {
+            // TODO: shoot fire
+        }
+
+        if (is_intersecting_player(this)) {
+            this.has_hit_player = true
+            is_death(Player.State.TOASTER_DEATH, true)
+        }
+
+        super.act()
+
+        return this
     }
 }
 
@@ -323,7 +348,7 @@ class Gluten_Free_Zone extends Actor {
 
     act() {
         if (is_intersecting_player(this))
-            is_zone_death(true)
+            is_death(Player.State.ZONE_DEATH, true)
 
         return this
     }
