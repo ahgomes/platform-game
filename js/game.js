@@ -61,8 +61,8 @@ async function init() {
     actors['pigeon'] = new Pigeon({
         x: canvas.width + GAP_LENGTH,
         y: GAP_LENGTH,
-        images: p_imgs,
-        images_b: p_imgs_b,
+        image_set: p_imgs,
+        image_set_b: p_imgs_b,
     })
 
     actors['butter_counter'] = new Counter({
@@ -130,14 +130,14 @@ function animate() {
         actors.p_sets.shift()
 
     // moving non-player game actors
-    if (player.x >= START_SPACE && player.direction != 0
-            && player.can_run(player.direction) && !stop_back())
+    if (player.x >= START_SPACE && player.direction != 0 && player.can_run()
+            && !stop_back())
         move_game()
 
     // reseting pigeon
     if (Math.random() * 6 < 0.01 && !actors.pigeon.state) {
         actors.pigeon.x = canvas.width + GAP_LENGTH
-        actors.pigeon.y = GAP_LENGTH
+        actors.pigeon.top = GAP_LENGTH
         actors.pigeon.height = 114
         actors.pigeon.state = 1
     }

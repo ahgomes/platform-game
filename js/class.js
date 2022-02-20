@@ -21,10 +21,11 @@ class Actor {
 
         if (this.rotation) {
             c.save()
-            c.translate(this.x, this.y)
-            c.rotate(degs_to_rads(this.rotation * 2))
-            c.drawImage(this.image, 0, 0, this.width, this.height)
-            c.translate(-this.x, -this.y)
+            c.translate(this.x + this.width / 2, this.y + this.height / 2)
+            c.rotate(this.rotation)
+            c.drawImage(this.image,
+                -(this.width / 2), -(this.height / 2), this.width, this.height )
+            c.translate(-(this.x + this.width / 2), -(this.y + this.height / 2))
             c.restore()
         } else c.drawImage(this.image, this.x, this.y, this.width, this.height)
 
@@ -98,7 +99,7 @@ class Player extends Actor {
                 break
             case Player.State.ZONE_DEATH:
                 this.image = images['GF-bread']
-                this.rotation += this.fall_direction * 0.25
+                this.rotation += degs_to_rads(this.fall_direction * 0.25 + 1)
                 this.y += 2
                 break
         }
@@ -118,19 +119,20 @@ class Player extends Actor {
         }
 
         if (this.is_jumping) {
-            this.rotation = (this.jump_strength) ? this.jump_strength * 2 : 0.1
+            this.rotation = (Math.PI / 6)
+                * Math.sin(Math.PI * (this.jump_strength / 15))
         }
 
         this.fall()
 
         if (!is_key_down.up) this.can_jump = true
-        if (is_key_down.left && this.can_run(-1) && this.x > 0) {
+        if (is_key_down.left && this.can_run() && this.x > 0) {
             this.direction = -1
             if (this.x < START_SPACE || stop_back()) this.run()
             this.meters_run--
-            this.rotation = -this.jump_strength * 1
+            this.rotation *= -1
         }
-        if (is_key_down.right && this.can_run(1)) {
+        if (is_key_down.right && this.can_run()) {
             this.direction = 1
             if (this.x < START_SPACE || stop_back()) this.run()
             this.meters_run++
@@ -142,12 +144,11 @@ class Player extends Actor {
         return this
     }
 
-    can_run(dir) {
-        return get_platform_at_offset(this.speed * this.direction - 1, 0) == null
+    can_run() {
+        return get_platform_at_offset(this.speed*this.direction + 1, 0) == null
     }
 
     fall() {
-        //console.log(this.rotation, this.jump_strength);
         if (is_on_platform()) {
             let ground = get_platform_at_offset(0, 1)
             if (ground != null)
@@ -157,7 +158,7 @@ class Player extends Actor {
             this.rotation = 0
             this.is_jumping = false
         } else {
-            this.jump_strength += Player.GRAVITY
+            this.jump_strength += (this.jump_strength < 15) ? Player.GRAVITY : 0
         }
         this.y += this.jump_strength
     }
@@ -171,39 +172,53 @@ class Player extends Actor {
     ENEMIES
 ------------------------------------------------------------------ */
 
-class Pigeon extends Actor {
+class Enemy extends Actor {
     constructor(prop = {}) {
         super(prop)
-        this.width = 105
-        this.height = 114
-        this.images = prop.images
-        this.images_b = prop.images_b
+        this.top = this.y
+        this.image_set = prop.image_set
         this.image_index = 0
         this.has_hit_player = false
         this.direction = 1
-        this.state = 0
         this.flap_rate = 5
+    }
+
+    act() {
+        this.image = this.image_set[
+            Math.floor(this.image_index++ / this.flap_rate) ]
+
+        this.width = this.image.width
+        this.height = this.image.height
+
+        this.y = this.top - this.height / 2
+
+        if (this.image_index >= this.image_set.length * this.flap_rate)
+            this.image_index = 0
+
+        // if (is_intersecting_player(this))
+        //     this.has_hit_player = true
+
+        return this
+    }
+}
+
+class Pigeon extends Enemy {
+    constructor(prop = {}) {
+        super(prop)
+        this.image_set_b = prop.image_set_b
+        this.state = 0
     }
 
     act() {
         if (!this.state) return this
 
-        if (!this.has_hit_player) {
-            this.image = this.images[
-                Math.floor(this.image_index++ / this.flap_rate)]
-        } else {
-            this.image = this.images_b[
-                Math.floor(this.image_index++ / this.flap_rate)]
-        }
-
-        if (this.image_index >= this.images.length * this.flap_rate)
-            this.image_index = 0
+        super.act()
 
         this.fly()
 
         if (is_intersecting_player(this)) {
             this.has_hit_player = true
-            this.width = 115
+            this.image_set = this.image_set_b
             is_bird_death(true)
         }
 
@@ -212,7 +227,7 @@ class Pigeon extends Actor {
 
     fly() {
         this.x -= 5
-        this.y += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
+        this.top += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
     }
 }
 
