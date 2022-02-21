@@ -22,7 +22,7 @@ let f_imgs = []
 
 const GAP_LENGTH = 150
 const START_SPACE = 130
-const MAX_P_SETS = 10
+const MAX_ELEMS = 10
 
 async function init() {
     // loading canvas ans images if possible
@@ -55,6 +55,8 @@ async function init() {
     actors['bkgds'] = [
         new Background(0, {image: images.background}),
         new Background(1, {image: images.background}) ]
+
+    actors['fire'] = []
 
     actors['p_sets'] = [
         new Platform_Set({instruc: 'ssbs s', butter_pattern: [0, 0, 1]})]
@@ -109,22 +111,6 @@ function animate() {
         game_over = true
     }
 
-    // game over and all animations done
-    // display game over screen
-    if (!inplay) {
-        if (game_over) { // adding restart instruction to game over text
-            game_over_screen()
-            let go_text = c.measureText('GAME OVER')
-            c.font = '1em Press Start'
-            c.lineWidth = 2
-            c.strokeText('[PRESS SPACE TO RESTART]', center,
-                middle + go_text.actualBoundingBoxDescent + 50)
-            c.fillText('[PRESS SPACE TO RESTART]', center,
-                middle + go_text.actualBoundingBoxDescent + 50)
-        }
-        return
-    }
-
     // clear canvas
     c.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -134,7 +120,7 @@ function animate() {
         actors.p_sets.push(new Platform_Set({start_x: canvas.width}))
 
     // removing Platform_Set at capacity
-    if (actors.p_sets.length > MAX_P_SETS)
+    if (actors.p_sets.length > MAX_ELEMS)
         actors.p_sets.shift()
 
     // moving non-player game actors
@@ -165,8 +151,25 @@ function animate() {
         value.update()
     })
 
+    //console.log(c.getImageData(player.x, player.y, player.width, player.height))
+
     if (game_over) game_over_screen()
     if (inplay && loaded) requestAnimationFrame(animate)
+
+    // game over and all animations done
+    // display game over screen
+    if (!inplay) {
+        if (game_over) { // adding restart instruction to game over text
+            game_over_screen()
+            let go_text = c.measureText('GAME OVER')
+            c.font = '1em Press Start'
+            c.lineWidth = 2
+            c.strokeText('[PRESS SPACE TO RESTART]', center,
+                middle + go_text.actualBoundingBoxDescent + 50)
+            c.fillText('[PRESS SPACE TO RESTART]', center,
+                middle + go_text.actualBoundingBoxDescent + 50)
+        }
+    }
 }
 
 // clear canvas and reset properties
@@ -195,6 +198,8 @@ function move_game() {
         if (b.x + b.width < 0) b.x = b.width - 1
         b.x -= player.direction
     })
+
+    actors.fire.forEach(f => f.x -= f.speed * player.direction)
 
     actors.p_sets.forEach(p => p.move(player))
 
@@ -231,6 +236,15 @@ function butter_inc() {
     actors.butter_counter.inc()
 }
 
+function fire(toaster) {
+    actors['fire'].push(new Fire({
+        x: toaster.x - 50,
+        y: toaster.y + 30,
+        image_set: f_imgs }))
+    if (actors.fire.length > MAX_ELEMS)
+        actors.fire.shift()
+}
+
 /* ------------------------------------------------------------------
     DEATH HELPER
 ------------------------------------------------------------------ */
@@ -253,7 +267,9 @@ function is_death(type, yes) {
 function is_on_platform(actor) {
     if (actors == undefined) return false
     for (let set of actors.p_sets) {
+        if (set.get_x < actor.x) continue
         for (let platform of set.actors) {
+            if (platform.x > actors.x + actor.width) break
             if (Actor.is_intersecting(actor, platform)
                     && platform instanceof Platform)
                 return true
@@ -266,7 +282,9 @@ function is_on_platform(actor) {
 function get_platform_at_offset(actor, x, y) {
     if (actors == undefined) return null
     for (let set of actors.p_sets) {
+        if (set.get_x < actor.x - x) continue
         for (let platform of set.actors) {
+            if (platform.x > actors.x + actor.width + x) break
             if (Actor.is_intersecting_offset(actor, platform, x, y)
                     && platform instanceof Platform)
                 return platform

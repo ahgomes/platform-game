@@ -186,9 +186,6 @@ class Enemy extends Actor {
         this.image = this.image_set[
             Math.floor(this.image_index++ / this.flap_rate) ]
 
-        this.width = this.image.width
-        this.height = this.image.height
-
         if (this.image_index >= this.image_set.length * this.flap_rate)
             this.image_index = 0
 
@@ -202,6 +199,8 @@ class Enemy extends Actor {
 class Pigeon extends Enemy {
     constructor(prop = {}) {
         super(prop)
+        this.width = 105
+        this.height = 114
         this.image_set_b = prop.image_set_b
         this.state = 0
     }
@@ -222,6 +221,8 @@ class Pigeon extends Enemy {
         return this
     }
 
+    // TODO: work on flight over platform should get closer to catch player
+
     fly() {
         this.x -= 5
         this.y += (this.x > middle ? 1 : this.x > middle - GAP_LENGTH ? 0 : 1)
@@ -230,24 +231,44 @@ class Pigeon extends Enemy {
     }
 }
 
-class Toaster extends Actor {
+class Toaster extends Enemy {
     constructor(prop = {}) {
         super(prop)
+        this.top = this.y
+        this.image_set_a = prop.image_set
         this.image_set_b = prop.image_set_b
         this.peaceful = true
         this.can_fire = false
+        this.fire_gap = 0
     }
 
     act() {
-        if (this.peaceful && is_player_at_offset(this, 80, 10)) {
+
+        super.act()
+
+        this.width = this.image.width * 0.65
+        this.height = this.image.height * 0.65
+        this.y = this.top - this.height
+
+        let is_player_near = is_player_at_offset(this, GAP_LENGTH * 2, 10)
+
+        if (!this.peaceful && this.image_index == 0 && !is_player_near) {
+            this.peaceful = true
+            this.image_set = this.image_set_a
+        }
+
+        if (this.peaceful && is_player_near) {
             this.peaceful = false
             this.can_fire = true
+            this.fire_gap = 0
             this.image_set = this.image_set_b
             this.image_index = 0
         }
 
-        if (!this.peaceful && this.image_index >= this.image_set.length * this.flap_rate) {
-            // TODO: shoot fire
+        if (!this.peaceful && this.image_index + 1 >= this.image_set.length * this.flap_rate) {
+            if (!(this.fire_gap % 20)) fire(this)
+            this.fire_gap++
+            this.can_fire = false
         }
 
         if (is_intersecting_player(this)) {
@@ -255,15 +276,40 @@ class Toaster extends Actor {
             is_death(Player.State.TOASTER_DEATH, true)
         }
 
-        super.act()
-
         return this
     }
 }
 
-class Fire extends Actor {
+class Fire extends Enemy {
     constructor(prop = {}) {
         super(prop)
+        this.speed = 3
+    }
+
+    act() {
+        // QUESTION: fire hit platform or pigeon ??
+
+        if (this.has_hit_player) return this
+
+        this.image = this.image_set[
+            Math.floor(this.image_index / this.flap_rate) ]
+
+        if (this.image_index + 1 < this.image_set.length * this.flap_rate)
+            this.image_index++
+        else this.image_index -= this.flap_rate * 2
+
+        this.width = this.image.width * 0.4
+        this.height = this.image.height * 0.4
+
+        this.x -= this.speed
+
+        if (is_intersecting_player(this)) {
+            this.has_hit_player = true
+            is_death(Player.State.TOASTER_DEATH, true)
+            this.width = 0
+        }
+
+        return this
     }
 }
 
@@ -344,11 +390,22 @@ class Falling extends Platform {
 class Gluten_Free_Zone extends Actor {
     constructor(prop = {}) {
         super(prop)
+        this.float_up = true
+        this.float_dist = 0
     }
 
     act() {
         if (is_intersecting_player(this))
             is_death(Player.State.ZONE_DEATH, true)
+
+        // TODO: work on float animation
+
+        if (this.float_up && this.float_dist++ >= 100)
+            this.float_up = false
+        else if (!this.float_up && this.float_dist-- <= 0)
+            this.float_up = true
+
+        this.y += (this.float_up) ? -0.05 : 0.05
 
         return this
     }
@@ -450,6 +507,10 @@ class Platform_Set extends Actor {
                 case 'l': // long
                     to_add = new Platform({ x: x,
                         width: canvas.width, height: 50, image: images.brick })
+                    this.actors.push(new Toaster({
+                        x: x + to_add.width - t_imgs[0].width * 2,
+                        y: canvas.height - to_add.height,
+                        image_set: t_imgs, image_set_b: t_imgs_b }))
                     break
             }
 
