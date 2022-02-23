@@ -53,10 +53,11 @@ async function init() {
     // -- Creating Actors --
 
     actors['bkgds'] = [
-        new Background(0, {image: images.background}),
-        new Background(1, {image: images.background}) ]
+        new Background({loc: 0, image: images.background}),
+        new Background({loc: 1, image: images.background}) ]
 
     actors['fire'] = []
+    actors['toasters'] = []
 
     actors['p_sets'] = [
         new Platform_Set({instruc: 'ssbs s', butter_pattern: [0, 0, 1]})]
@@ -69,7 +70,7 @@ async function init() {
     actors['player'] = player
 
     actors['pigeon'] = new Pigeon({
-        x: canvas.width + GAP_LENGTH,
+        x: -GAP_LENGTH,
         y: GAP_LENGTH,
         image_set: p_imgs,
         image_set_b: p_imgs_b,
@@ -200,6 +201,7 @@ function move_game() {
     })
 
     actors.fire.forEach(f => f.x -= f.speed * player.direction)
+    actors.toasters.forEach(t => t.x -= player.speed * player.direction)
 
     actors.p_sets.forEach(p => p.move(player))
 
@@ -237,12 +239,18 @@ function butter_inc() {
 }
 
 function fire(toaster) {
-    actors['fire'].push(new Fire({
+    actors.fire.push(new Fire({
         x: toaster.x - 50,
         y: toaster.y + 30,
         image_set: f_imgs }))
     if (actors.fire.length > MAX_ELEMS)
         actors.fire.shift()
+}
+
+function add_toaster(toaster) {
+    actors.toasters.push(toaster)
+    if (actors.toasters.length > MAX_ELEMS)
+        actors.toasters.shift()
 }
 
 /* ------------------------------------------------------------------

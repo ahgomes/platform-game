@@ -202,7 +202,7 @@ class Pigeon extends Enemy {
         this.width = 105
         this.height = 114
         this.image_set_b = prop.image_set_b
-        this.state = 0
+        this.state = prop.state || 0
     }
 
     act() {
@@ -284,12 +284,12 @@ class Fire extends Enemy {
     constructor(prop = {}) {
         super(prop)
         this.speed = 3
+        this.has_hit_wall
     }
 
     act() {
-        // QUESTION: fire hit platform or pigeon ??
 
-        if (this.has_hit_player) return this
+        if (this.has_hit_player || this.has_hit_wall) return this
 
         this.image = this.image_set[
             Math.floor(this.image_index / this.flap_rate) ]
@@ -306,6 +306,14 @@ class Fire extends Enemy {
         if (is_intersecting_player(this)) {
             this.has_hit_player = true
             is_death(Player.State.TOASTER_DEATH, true)
+            this.width = 0
+        }
+
+        // TODO: improve hit wall interaction
+        // QUESTION: could fire hit pigeon?
+
+        if (is_on_platform(this)) {
+            this.has_hit_wall = true
             this.width = 0
         }
 
@@ -331,7 +339,6 @@ class Butter extends Actor {
     }
 
     act() {
-        //console.log(Math.sqrt((player.height**2) + (player.width**2))/2);
         if (is_intersecting_player(this) && !this.is_collected) {
             this.is_collected = true
             butter_inc()
@@ -447,7 +454,6 @@ class Platform_Set extends Actor {
     }
 
     create_platform_group(start_x) {
-        // TODO: add toasters
         let form = this.instruc.split('')
         let prev_width = this.x
         form.forEach((ch, i) => {
@@ -471,7 +477,7 @@ class Platform_Set extends Actor {
                     to_add = new Platform({ x: x,
                         width: 150, height: 200, image: images.brick })
                     break
-                case 'h': // tall
+                case 'h': // heap
                     to_add = new Platform({ x: x,
                         width: 100, height: 150, image: images.brick })
                     break
@@ -504,13 +510,15 @@ class Platform_Set extends Actor {
                             image: images.brick }))
                     }
                     break
-                case 'l': // long
+                case 'l': // long w/ toasters
                     to_add = new Platform({ x: x,
                         width: canvas.width, height: 50, image: images.brick })
-                    this.actors.push(new Toaster({
+                    let toaster = new Toaster({
                         x: x + to_add.width - t_imgs[0].width * 2,
                         y: canvas.height - to_add.height,
-                        image_set: t_imgs, image_set_b: t_imgs_b }))
+                        image_set: t_imgs, image_set_b: t_imgs_b })
+                    //this.actors.push(toaster)
+                    add_toaster(toaster)
                     break
             }
 
@@ -518,6 +526,8 @@ class Platform_Set extends Actor {
 
             this.actors.push(to_add)
             prev_width += to_add.width
+
+            // adding butter randomly above platforms
             if ((this.buttered && i < this.butter_pattern.length
                     && this.butter_pattern[i])
                     || (!this.buttered && Math.random() < 0.5)) {
@@ -553,10 +563,10 @@ class Platform_Set extends Actor {
 ------------------------------------------------------------------ */
 
 class Background extends Actor {
-    constructor(loc = -1, prop = {}) {
+    constructor(prop = {}) {
         super(prop)
         this.scale_to_fill()
-        this.x = loc * this.width
+        this.x = prop.loc * this.width
         this.y = canvas.height - this.height
     }
 
