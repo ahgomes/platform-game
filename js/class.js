@@ -320,8 +320,6 @@ class Fire extends Enemy {
             this.has_hit_player = true
             is_death(Player.State.TOASTER_DEATH, true)
             this.width = 0
-            this.hit_box.width = 0
-            this.hit_box.height = 0
         }
 
         // TODO: improve hit wall interaction
@@ -330,8 +328,6 @@ class Fire extends Enemy {
         if (is_on_platform(this)) {
             this.has_hit_wall = true
             this.width = 0
-            this.hit_box.width = 0
-            this.hit_box.height = 0
         }
 
         return this
@@ -368,8 +364,6 @@ class Butter extends Actor {
 
         if (this.width < 0) {
             this.width = 0
-            this.hit_box.width = 0
-            this.hit_box.height = 0
             return this
         }
 
