@@ -12,19 +12,19 @@ const SPRITE_HIT_BOX = {
 
     toaster: {
         walk: [
-            { dx: 6, dy: 12, width: 112, height: 55, },
-            { dx: 2, dy: 4,  width: 120, height: 56, },
-            { dx: 0, dy: 0,  width: 124, height: 56, },
-            { dx: 0, dy: 0,  width: 124, height: 56, },
-            { dx: 4, dy: 0,  width: 116, height: 56, },
-            { dx: 4, dy: 0,  width: 116, height: 56, },
+            { dx: 6, dy: 12, width: 68, height: 55, },
+            { dx: 2, dy: 4,  width: 73, height: 56, },
+            { dx: 0, dy: 0,  width: 72, height: 56, },
+            { dx: 0, dy: 0,  width: 73, height: 56, },
+            { dx: 4, dy: 0,  width: 68, height: 56, },
+            { dx: 4, dy: 0,  width: 69, height: 56, },
         ],
         attack: [
-            { dx: 4,  dy: 44, width: 107, height: 60, },
-            { dx: 0,  dy: 44, width: 115, height: 60, },
-            { dx: 0,  dy: 44, width: 115, height: 60, },
-            { dx: 6,  dy: 35, width: 104, height: 72, },
-            { dx: 29, dy: 0,  width: 56,  height: 107, },
+            { dx: 4,  dy: 44, width: 64, height: 60, },
+            { dx: 0,  dy: 44, width: 72, height: 60, },
+            { dx: 0,  dy: 44, width: 72, height: 60, },
+            { dx: 6,  dy: 44, width: 64, height: 63, },
+            { dx: 29, dy: 40, width: 56, height: 67, },
         ]
     },
 

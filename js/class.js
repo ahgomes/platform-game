@@ -10,6 +10,7 @@ class Actor {
         this.x = props.x || 0
         this.y = props.y || canvas.height - this.height
         this.rotation = 0
+        this.hit_box = { dx: 0, dy: 0, width: this.width, height: this.height }
     }
 
     act() {
@@ -35,16 +36,26 @@ class Actor {
     update() {
         this.act()
             .draw()
-        // if (this instanceof Platform_Set) {
-        //     this.actors.forEach((p) => {
-        //         c.strokeRect(p.x, p.y, p.width, p.height)
-        //     })
-        // }
+        c.strokeStyle = '#f00'
+        c.lineWidth = 1
+        c.strokeRect(this.x + this.hit_box.dx, this.y + this.hit_box.dy, this.hit_box.width, this.hit_box.height)
+        if (this instanceof Platform_Set) {
+            this.actors.forEach((p) => {
+                c.strokeRect(p.x + p.hit_box.dx, p.y + p.hit_box.dy, p.hit_box.width, p.hit_box.height)
+            })
+        }
+
     }
 
     static is_intersecting(a, b) {
-        return !(a.x > b.x + b.width || b.x > a.x + a.width)
-                && !(a.y > b.y + b.height || b.y > a.y + a.height)
+        let hit_a = { x: a.x + a.hit_box.dx, y: a.y + a.hit_box.dy,
+                width: a.hit_box.width, height: a.hit_box.height }
+        let hit_b = { x: b.x + b.hit_box.dx, y: b.y + b.hit_box.dy,
+                width: b.hit_box.width, height: b.hit_box.height }
+        return !(hit_a.x > hit_b.x + hit_b.width
+                 || hit_b.x > hit_a.x + hit_a.width)
+            && !(hit_a.y > hit_b.y + hit_b.height
+                 || hit_b.y > hit_a.y + hit_a.height)
     }
 
     static is_intersecting_offset(a, b, x, y) {
@@ -177,7 +188,6 @@ class Enemy extends Actor {
         this.has_hit_player = false
         this.direction = 1
         this.flap_rate = 5
-        this.hit_box = { width: this.width, height: this.height }
     }
 
     act() {
@@ -196,9 +206,7 @@ class Enemy extends Actor {
 
 class Pigeon extends Enemy {
     constructor(props = {}) {
-        super(props)
-        this.width = 105
-        this.height = 114
+        super({...props, width: 105, height: 114})
         this.image_set_b = props.image_set_b
         this.state = props.state || 0
     }
@@ -237,7 +245,7 @@ class Toaster extends Enemy {
         this.image_set_b = props.image_set_b
         this.peaceful = true
         this.can_fire = false
-        this.fire_gap = 0
+        this.fire_gap = 200
     }
 
     act() {
@@ -258,13 +266,15 @@ class Toaster extends Enemy {
         if (this.peaceful && is_player_near) {
             this.peaceful = false
             this.can_fire = true
-            this.fire_gap = 0
             this.image_set = this.image_set_b
             this.frame_count = 0
         }
 
         if (!this.peaceful && this.frame_count + 1 >= this.image_set.length * this.flap_rate) {
-            if (!(this.fire_gap % 20)) fire(this)
+            if (!(this.fire_gap % 200)) {
+                fire(this)
+                this.fire_gap = 0
+            }
             this.fire_gap++
             this.can_fire = false
         }
@@ -277,10 +287,6 @@ class Toaster extends Enemy {
             this.has_hit_player = true
             is_death(Player.State.TOASTER_DEATH, true)
         }
-
-        c.strokeStyle = '#f00'
-        c.lineWidth = 1
-        c.strokeRect(this.x + this.hit_box.dx, this.y + this.hit_box.dy, this.hit_box.width, this.hit_box.height)
 
         return this
     }
@@ -324,9 +330,6 @@ class Fire extends Enemy {
             this.width = 0
         }
 
-        c.strokeStyle = '#f00'
-        c.lineWidth = 1
-        c.strokeRect(this.x + this.hit_box.dx, this.y + this.hit_box.dy, this.hit_box.width, this.hit_box.height)
         return this
     }
 }
@@ -340,9 +343,7 @@ class Butter extends Actor {
     static HEIGHT = 26
 
     constructor(props = {}) {
-        super(props)
-        this.width = Butter.WIDTH
-        this.height = Butter.HEIGHT
+        super({...props, width: Butter.WIDTH, height: Butter.HEIGHT})
         this.is_collected = false
         this.float_up = true
         this.float_dist = 0
