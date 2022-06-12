@@ -3,12 +3,12 @@
 ------------------------------------------------------------------ */
 
 class Actor {
-    constructor(prop = {}) {
-        this.image = prop.image
-        this.width = (prop.width ?? (this.image ? this.image.width : 0))
-        this.height = (prop.height ?? (this.image ? this.image.height : 0))
-        this.x = prop.x || 0
-        this.y = prop.y || canvas.height - this.height
+    constructor(props = {}) {
+        this.image = props.image
+        this.width = (props.width ?? (this.image ? this.image.width : 0))
+        this.height = (props.height ?? (this.image ? this.image.height : 0))
+        this.x = props.x || 0
+        this.y = props.y || canvas.height - this.height
         this.rotation = 0
     }
 
@@ -35,14 +35,11 @@ class Actor {
     update() {
         this.act()
             .draw()
-        c.strokeStyle = '#f00'
-        c.lineWidth = 1
-        c.strokeRect(this.x, this.y, this.width, this.height)
-        if (this instanceof Platform_Set) {
-            this.actors.forEach((p) => {
-                c.strokeRect(p.x, p.y, p.width, p.height)
-            })
-        }
+        // if (this instanceof Platform_Set) {
+        //     this.actors.forEach((p) => {
+        //         c.strokeRect(p.x, p.y, p.width, p.height)
+        //     })
+        // }
     }
 
     static is_intersecting(a, b) {
@@ -72,8 +69,8 @@ class Player extends Actor {
 
     static GRAVITY = 1
 
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.direction = 0
         this.fall_direction = 0
         this.speed = 4
@@ -173,21 +170,22 @@ class Player extends Actor {
 ------------------------------------------------------------------ */
 
 class Enemy extends Actor {
-    constructor(prop = {}) {
-        super(prop)
-        this.image_set = prop.image_set
-        this.image_index = 0
+    constructor(props = {}) {
+        super(props)
+        this.image_set = props.image_set
+        this.frame_count = 0
         this.has_hit_player = false
         this.direction = 1
         this.flap_rate = 5
+        this.hit_box = { width: this.width, height: this.height }
     }
 
     act() {
         this.image = this.image_set[
-            Math.floor(this.image_index++ / this.flap_rate) ]
+            Math.floor(this.frame_count++ / this.flap_rate) ]
 
-        if (this.image_index >= this.image_set.length * this.flap_rate)
-            this.image_index = 0
+        if (this.frame_count >= this.image_set.length * this.flap_rate)
+            this.frame_count = 0
 
         // if (is_intersecting_player(this))
         //     this.has_hit_player = true
@@ -197,12 +195,12 @@ class Enemy extends Actor {
 }
 
 class Pigeon extends Enemy {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.width = 105
         this.height = 114
-        this.image_set_b = prop.image_set_b
-        this.state = prop.state || 0
+        this.image_set_b = props.image_set_b
+        this.state = props.state || 0
     }
 
     act() {
@@ -232,11 +230,11 @@ class Pigeon extends Enemy {
 }
 
 class Toaster extends Enemy {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.top = this.y
-        this.image_set_a = prop.image_set
-        this.image_set_b = prop.image_set_b
+        this.image_set_a = props.image_set
+        this.image_set_b = props.image_set_b
         this.peaceful = true
         this.can_fire = false
         this.fire_gap = 0
@@ -246,13 +244,13 @@ class Toaster extends Enemy {
 
         super.act()
 
-        this.width = this.image.width * 0.65
-        this.height = this.image.height * 0.65
+        this.width = this.image.width
+        this.height = this.image.height
         this.y = this.top - this.height
 
         let is_player_near = is_player_at_offset(this, GAP_LENGTH * 2, 10)
 
-        if (!this.peaceful && this.image_index == 0 && !is_player_near) {
+        if (!this.peaceful && this.frame_count == 0 && !is_player_near) {
             this.peaceful = true
             this.image_set = this.image_set_a
         }
@@ -262,27 +260,35 @@ class Toaster extends Enemy {
             this.can_fire = true
             this.fire_gap = 0
             this.image_set = this.image_set_b
-            this.image_index = 0
+            this.frame_count = 0
         }
 
-        if (!this.peaceful && this.image_index + 1 >= this.image_set.length * this.flap_rate) {
+        if (!this.peaceful && this.frame_count + 1 >= this.image_set.length * this.flap_rate) {
             if (!(this.fire_gap % 20)) fire(this)
             this.fire_gap++
             this.can_fire = false
         }
+
+        let sprite_index = Math.floor(this.frame_count / this.flap_rate)
+        let type = this.peaceful ? 'walk' : 'attack'
+        this.hit_box = SPRITE_HIT_BOX.toaster[type][sprite_index]
 
         if (is_intersecting_player(this)) {
             this.has_hit_player = true
             is_death(Player.State.TOASTER_DEATH, true)
         }
 
+        c.strokeStyle = '#f00'
+        c.lineWidth = 1
+        c.strokeRect(this.x + this.hit_box.dx, this.y + this.hit_box.dy, this.hit_box.width, this.hit_box.height)
+
         return this
     }
 }
 
 class Fire extends Enemy {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.speed = 3
         this.has_hit_wall
     }
@@ -291,15 +297,16 @@ class Fire extends Enemy {
 
         if (this.has_hit_player || this.has_hit_wall) return this
 
-        this.image = this.image_set[
-            Math.floor(this.image_index / this.flap_rate) ]
+        let sprite_index = Math.floor(this.frame_count / this.flap_rate)
+        this.image = this.image_set[sprite_index]
 
-        if (this.image_index + 1 < this.image_set.length * this.flap_rate)
-            this.image_index++
-        else this.image_index -= this.flap_rate * 2
+        if (this.frame_count + 1 < this.image_set.length * this.flap_rate)
+            this.frame_count++
+        else this.frame_count -= this.flap_rate * 2
 
-        this.width = this.image.width * 0.4
-        this.height = this.image.height * 0.4
+        this.width = this.image.width
+        this.height = this.image.height
+        this.hit_box = SPRITE_HIT_BOX.fire[sprite_index]
 
         this.x -= this.speed
 
@@ -317,6 +324,9 @@ class Fire extends Enemy {
             this.width = 0
         }
 
+        c.strokeStyle = '#f00'
+        c.lineWidth = 1
+        c.strokeRect(this.x + this.hit_box.dx, this.y + this.hit_box.dy, this.hit_box.width, this.hit_box.height)
         return this
     }
 }
@@ -329,8 +339,8 @@ class Butter extends Actor {
     static WIDTH = 65
     static HEIGHT = 26
 
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.width = Butter.WIDTH
         this.height = Butter.HEIGHT
         this.is_collected = false
@@ -372,14 +382,14 @@ class Butter extends Actor {
 ------------------------------------------------------------------ */
 
 class Platform extends Actor {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
     }
 }
 
 class Falling extends Platform {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.falling_strength = 0
     }
 
@@ -395,8 +405,8 @@ class Falling extends Platform {
 }
 
 class Gluten_Free_Zone extends Actor {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.float_up = true
         this.float_dist = 0
     }
@@ -419,14 +429,14 @@ class Gluten_Free_Zone extends Actor {
 }
 
 class Platform_Set extends Actor {
-    constructor(prop = {}) {
-        super(prop)
-        this.x = prop.start_x || 0
+    constructor(props = {}) {
+        super(props)
+        this.x = props.start_x || 0
         this.actors = []
-        this.butter_pattern = prop.butter_pattern
+        this.butter_pattern = props.butter_pattern
         this.buttered = (this.butter_pattern) ? true : false
-        this.instruc = prop.instruc || Platform_Set.rand_platform_string()
-        this.create_platform_group(prop.start_x || 0)
+        this.instruc = props.instruc || Platform_Set.rand_platform_string()
+        this.create_platform_group(props.start_x || 0)
     }
 
     act() {
@@ -488,10 +498,10 @@ class Platform_Set extends Actor {
                         prev_width += GAP_LENGTH
                         x += GAP_LENGTH
                     }
-                    let prop = { x: x, y: canvas.height - GAP_LENGTH,
+                    let props = { x: x, y: canvas.height - GAP_LENGTH,
                         width: GAP_LENGTH, height: 30, image: images.brick }
-                    to_add = (ch == 'f') ? new Platform(prop)
-                        : new Falling(prop)
+                    to_add = (ch == 'f') ? new Platform(props)
+                        : new Falling(props)
                     if (i < form.length - 1 && form[i + 1] != ' ')
                         prev_width += GAP_LENGTH
                     break
@@ -514,7 +524,7 @@ class Platform_Set extends Actor {
                     to_add = new Platform({ x: x,
                         width: canvas.width, height: 50, image: images.brick })
                     let toaster = new Toaster({
-                        x: x + to_add.width - t_imgs[0].width * 2,
+                        x: x + to_add.width - t_imgs[0].width * 3,
                         y: canvas.height - to_add.height,
                         image_set: t_imgs, image_set_b: t_imgs_b })
                     //this.actors.push(toaster)
@@ -563,10 +573,10 @@ class Platform_Set extends Actor {
 ------------------------------------------------------------------ */
 
 class Background extends Actor {
-    constructor(prop = {}) {
-        super(prop)
+    constructor(props = {}) {
+        super(props)
         this.scale_to_fill()
-        this.x = prop.loc * this.width
+        this.x = props.loc * this.width
         this.y = canvas.height - this.height
     }
 
@@ -579,13 +589,13 @@ class Background extends Actor {
 }
 
 class Counter extends Actor {
-    constructor(prop = {}) {
-        super(prop)
-        this.pre_text = prop.pre_text || ''
-        this._num = prop.num || 0
-        this.post_text = prop.post_text || ''
+    constructor(props = {}) {
+        super(props)
+        this.pre_text = props.pre_text || ''
+        this._num = props.num || 0
+        this.post_text = props.post_text || ''
         this.text = this.pre_text + this._num + this.post_text
-        this.text_align = prop.text_align || 'start'
+        this.text_align = props.text_align || 'start'
     }
 
     // IDEA: add icons to counter
