@@ -218,6 +218,9 @@ class Pigeon extends Enemy {
 
         this.fly()
 
+        let sprite_index = Math.floor(this.frame_count / this.flap_rate)
+        this.hit_box = SPRITE_HIT_BOX.pigeon[sprite_index]
+
         if (is_intersecting_player(this)) {
             this.has_hit_player = true
             this.image_set = this.image_set_b
@@ -340,10 +343,9 @@ class Fire extends Enemy {
 
 class Butter extends Actor {
     static WIDTH = 65
-    static HEIGHT = 26
 
     constructor(props = {}) {
-        super({...props, width: Butter.WIDTH, height: Butter.HEIGHT})
+        super(props)
         this.is_collected = false
         this.float_up = true
         this.float_dist = 0

@@ -29,6 +29,11 @@ const SPRITE_HIT_BOX = {
     },
 
     pigeon: [
-        { }
+        { dx: 0, dy: 0,  width: 101, height: 77, },
+        { dx: 0, dy: 12, width: 101, height: 64, },
+        { dx: 0, dy: 40, width: 104, height: 49, },
+        { dx: 0, dy: 41, width: 100, height: 73, },
+        { dx: 0, dy: 41, width: 100, height: 63, },
+        { dx: 0, dy: 22, width: 101, height: 55, },
     ],
 }
