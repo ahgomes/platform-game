@@ -60,7 +60,7 @@ async function init() {
     actors['toasters'] = []
 
     actors['p_sets'] = [
-        new Platform_Set({instruc: 'ssbs shlh', butter_pattern: [0, 0, 1]})]
+        new Platform_Set({instruc: 'ssbs s', butter_pattern: [0, 0, 1]})]
 
     player = new Player({
         x: 100,

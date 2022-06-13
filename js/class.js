@@ -36,15 +36,6 @@ class Actor {
     update() {
         this.act()
             .draw()
-        c.strokeStyle = '#f00'
-        c.lineWidth = 1
-        c.strokeRect(this.x + this.hit_box.dx, this.y + this.hit_box.dy, this.hit_box.width, this.hit_box.height)
-        if (this instanceof Platform_Set) {
-            this.actors.forEach((p) => {
-                c.strokeRect(p.x + p.hit_box.dx, p.y + p.hit_box.dy, p.hit_box.width, p.hit_box.height)
-            })
-        }
-
     }
 
     static is_intersecting(a, b) {
@@ -59,9 +50,15 @@ class Actor {
     }
 
     static is_intersecting_offset(a, b, x, y) {
+        let hit_a = { x: a.x + a.hit_box.dx, y: a.y + a.hit_box.dy,
+                width: a.hit_box.width, height: a.hit_box.height }
+        let hit_b = { x: b.x + b.hit_box.dx, y: b.y + b.hit_box.dy,
+                width: b.hit_box.width, height: b.hit_box.height }
         x--; y--
-        return !(a.x > b.x + b.width - x || b.x > a.x + a.width + x)
-                && !(a.y > b.y + b.height - y || b.y > a.y + a.height + y)
+        return !(hit_a.x > hit_b.x + hit_b.width - x
+                 || hit_b.x > hit_a.x + hit_a.width + x)
+            && !(hit_a.y > hit_b.y + hit_b.height - y
+                 || hit_b.y > hit_a.y + hit_a.height + y)
     }
 }
 
@@ -248,7 +245,7 @@ class Toaster extends Enemy {
         this.image_set_b = props.image_set_b
         this.peaceful = true
         this.can_fire = false
-        this.fire_gap = 200
+        this.fire_gap = 0
     }
 
     act() {
@@ -274,9 +271,8 @@ class Toaster extends Enemy {
         }
 
         if (!this.peaceful && this.frame_count + 1 >= this.image_set.length * this.flap_rate) {
-            if (!(this.fire_gap % 200)) {
+            if (!(this.fire_gap % 10)) {
                 fire(this)
-                this.fire_gap = 0
             }
             this.fire_gap++
             this.can_fire = false
